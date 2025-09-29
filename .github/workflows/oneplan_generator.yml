@@ -1,4 +1,4 @@
-name: OnePlan — Project Generator
+name: OnePlan — Project Generator (FIXED)
 
 on:
   workflow_dispatch:
@@ -20,13 +20,15 @@ jobs:
         run: |
           set -euxo pipefail
 
-          # Root dirs
-          mkdir -p app/src/main/java/com/oneplan/app/ui/{screens,theme}
-          mkdir -p app/src/main/{res/values,}
+          # --- Directories (make ALL before writing files) ---
+          mkdir -p app/src/main/java/com/oneplan/app/ui/screens
+          mkdir -p app/src/main/java/com/oneplan/app/ui/theme
+          mkdir -p app/src/main/java/com/oneplan/app/navigation
+          mkdir -p app/src/main/res/values
           mkdir -p .github/workflows
           mkdir -p gradle/wrapper
 
-          # -------- settings.gradle.kts
+          # --- settings.gradle.kts ---
           cat > settings.gradle.kts <<'EOF'
           pluginManagement {
               repositories { google(); mavenCentral(); gradlePluginPortal() }
@@ -39,7 +41,7 @@ jobs:
           include(":app")
           EOF
 
-          # -------- build.gradle.kts (root)
+          # --- build.gradle.kts (root) ---
           cat > build.gradle.kts <<'EOF'
           buildscript {
               dependencies { classpath("com.google.dagger:hilt-android-gradle-plugin:2.52") }
@@ -52,7 +54,7 @@ jobs:
           }
           EOF
 
-          # -------- app/build.gradle.kts
+          # --- app/build.gradle.kts ---
           cat > app/build.gradle.kts <<'EOF'
           plugins {
               id("com.android.application")
@@ -60,11 +62,9 @@ jobs:
               id("com.google.dagger.hilt.android")
               id("org.jetbrains.kotlin.kapt")
           }
-
           android {
               namespace = "com.oneplan.app"
               compileSdk = 34
-
               defaultConfig {
                   applicationId = "com.oneplan.app"
                   minSdk = 24
@@ -74,7 +74,6 @@ jobs:
                   testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
                   vectorDrawables { useSupportLibrary = true }
               }
-
               buildTypes {
                   release {
                       isMinifyEnabled = true
@@ -82,24 +81,16 @@ jobs:
                   }
                   debug { isMinifyEnabled = false }
               }
-
-              compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
+              compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
               kotlinOptions { jvmTarget = "17" }
-
               buildFeatures { compose = true; buildConfig = true }
               composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
-
               packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
           }
-
           dependencies {
               val composeBom = platform("androidx.compose:compose-bom:2024.09.03")
               implementation(composeBom)
               androidTestImplementation(composeBom)
-
               implementation("androidx.core:core-ktx:1.13.1")
               implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
               implementation("androidx.activity:activity-compose:1.9.2")
@@ -109,11 +100,8 @@ jobs:
               debugImplementation("androidx.compose.ui:ui-tooling")
               implementation("androidx.navigation:navigation-compose:2.8.1")
               implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-
               implementation("com.google.dagger:hilt-android:2.52")
               kapt("com.google.dagger:hilt-compiler:2.52")
-
-              // Optional future bits (Room/Retrofit) can be added later
               testImplementation("junit:junit:4.13.2")
               androidTestImplementation("androidx.test.ext:junit:1.2.1")
               androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
@@ -121,14 +109,14 @@ jobs:
           }
           EOF
 
-          # -------- proguard
+          # --- proguard ---
           cat > app/proguard-rules.pro <<'EOF'
           -keep class dagger.hilt.** { *; }
           -keep class dagger.** { *; }
           -keep class javax.inject.** { *; }
           EOF
 
-          # -------- AndroidManifest.xml
+          # --- AndroidManifest.xml ---
           cat > app/src/main/AndroidManifest.xml <<'EOF'
           <manifest xmlns:android="http://schemas.android.com/apk/res/android"
               package="com.oneplan.app">
@@ -153,7 +141,7 @@ jobs:
           </manifest>
           EOF
 
-          # -------- Kotlin sources
+          # --- Kotlin sources ---
           cat > app/src/main/java/com/oneplan/app/OnePlanApp.kt <<'EOF'
           package com.oneplan.app
           import android.app.Application
@@ -295,27 +283,20 @@ jobs:
           }
           EOF
 
-          # -------- resources
+          # --- resources ---
           cat > app/src/main/res/values/colors.xml <<'EOF'
-          <resources>
-              <color name="md_theme_light_primary">#0057D9</color>
-          </resources>
+          <resources><color name="md_theme_light_primary">#0057D9</color></resources>
           EOF
-
           cat > app/src/main/res/values/themes.xml <<'EOF'
           <resources xmlns:tools="http://schemas.android.com/tools">
               <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
           </resources>
           EOF
 
-          # -------- gradle wrapper (download real jar)
-          curl -fsSL -o gradle/wrapper/gradle-wrapper.jar https://services.gradle.org/distributions/gradle-8.7-bin.zip
-          # The above is the full distro; extract only the wrapper jar from it:
-          rm -f gradle/wrapper/gradle-wrapper.jar
+          # --- gradle wrapper (download real jar) ---
           curl -fsSL -o gradle-8.7-bin.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -p gradle-8.7-bin.zip gradle-8.7/lib/gradle-wrapper-*.jar > gradle/wrapper/gradle-wrapper.jar
           rm -f gradle-8.7-bin.zip
-
           cat > gradle/wrapper/gradle-wrapper.properties <<'EOF'
           distributionBase=GRADLE_USER_HOME
           distributionPath=wrapper/dists
@@ -323,7 +304,6 @@ jobs:
           zipStoreBase=GRADLE_USER_HOME
           zipStorePath=wrapper/dists
           EOF
-
           cat > gradlew <<'EOF'
           #!/usr/bin/env sh
           APP_HOME=`dirname "$0"`
@@ -333,7 +313,6 @@ jobs:
           exec "$JAVA_EXE" -Xms64m -Xmx512m -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
           EOF
           chmod +x gradlew
-
           cat > gradlew.bat <<'EOF'
           @ECHO OFF
           SET DIR=%~dp0
@@ -343,7 +322,7 @@ jobs:
           "%JAVA_EXE%" -Xms64m -Xmx512m -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
           EOF
 
-          # -------- .gitignore
+          # --- .gitignore ---
           cat > .gitignore <<'EOF'
           *.iml
           .gradle
@@ -358,7 +337,7 @@ jobs:
           *.jks
           EOF
 
-          # -------- CI that builds APK on every push
+          # --- CI: build APK on every push ---
           cat > .github/workflows/android-ci.yml <<'EOF'
           name: OnePlanAndroid — CI
           on:
