@@ -5,7 +5,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.*
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Settings
 
 @Composable
 fun OnePlanApp() {
@@ -24,25 +31,28 @@ fun OnePlanApp() {
 
 @Composable
 fun OnePlanBottomBar(nav: NavHostController) {
+    data class Item(val route: String, val label: String, val icon: @Composable () -> Unit)
     val items = listOf(
-        "budget" to "Budget",
-        "meals" to "Meals",
-        "settings" to "Settings"
+        Item("budget", "Budget", { Icon(Icons.Filled.Home, contentDescription = "Budget") }),
+        Item("meals", "Meals", { Icon(Icons.Filled.Restaurant, contentDescription = "Meals") }),
+        Item("settings", "Settings", { Icon(Icons.Filled.Settings, contentDescription = "Settings") }),
     )
     NavigationBar {
         val current by nav.currentBackStackEntryAsState()
         val route = current?.destination?.route
-        items.forEach { (r, label) ->
+        items.forEach { item ->
             NavigationBarItem(
-                selected = route == r,
-                onClick = { nav.navigate(r) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
-                label = { Text(label) },
-                icon = { Icon(Icons.Default.Circle, contentDescription = label) }
+                selected = route == item.route,
+                onClick = {
+                    nav.navigate(item.route) {
+                        popUpTo(nav.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                label = { Text(item.label) },
+                icon = item.icon
             )
         }
     }
 }
-
-// Tiny built-in icon to avoid extra deps
-object Icons { object Default { @Composable fun Circle() = IconDefaults.FilledCircle() } }
-@Composable fun IconDefaults.FilledCircle() { /* empty placeholder; M3 shows a dot */ }

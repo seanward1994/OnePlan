@@ -13,7 +13,7 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = (System.getenv("VC") ?: "1").toInt()
-        versionName = "0.2.0"
+        versionName = "0.2.1"
     }
 
     buildTypes {
@@ -38,12 +38,13 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    // Compose core
+    // Compose core + Material3 + Navigation
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3:1.3.0")
     implementation("androidx.navigation:navigation-compose:2.8.0")
+    implementation("androidx.compose.material:material-icons-extended:1.7.3")
 
     // Lifecycle
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
@@ -57,7 +58,10 @@ dependencies {
     // DataStore (Preferences)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Material Components (for XML theme parent)
+    // Coroutines on Android (for Room/Compose)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // Material Components (XML theme parent)
     implementation("com.google.android.material:material:1.12.0")
 
     // Debug
