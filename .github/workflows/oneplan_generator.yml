@@ -1,27 +1,33 @@
-name: OnePlan — Project Generator (FIXED)
+name: OnePlan — Project Generator (PR)
 
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
 
+concurrency:
+  group: oneplan-generator
+  cancel-in-progress: false
+
 jobs:
   generate:
     runs-on: ubuntu-latest
     permissions:
-  contents: write
-  pull-requests: write
+      contents: write
+      pull-requests: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
-      - name: Create project structure & files
+      - name: Create project structure & files (idempotent)
         shell: bash
         run: |
-          set -euxo pipefail
+          set -euo pipefail
 
-          # --- Directories (make ALL before writing files) ---
+          # --- Directories ---
           mkdir -p app/src/main/java/com/oneplan/app/ui/screens
           mkdir -p app/src/main/java/com/oneplan/app/ui/theme
           mkdir -p app/src/main/java/com/oneplan/app/navigation
@@ -31,82 +37,81 @@ jobs:
 
           # --- settings.gradle.kts ---
           cat > settings.gradle.kts <<'EOF'
-          pluginManagement {
-              repositories { google(); mavenCentral(); gradlePluginPortal() }
-          }
+          pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
           dependencyResolutionManagement {
-              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
-              repositories { google(); mavenCentral() }
+            repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+            repositories { google(); mavenCentral() }
           }
           rootProject.name = "OnePlanAndroid"
           include(":app")
           EOF
 
-          # --- build.gradle.kts (root) ---
+          # --- root build.gradle.kts ---
           cat > build.gradle.kts <<'EOF'
-          buildscript {
-              dependencies { classpath("com.google.dagger:hilt-android-gradle-plugin:2.52") }
-          }
+          buildscript { dependencies { classpath("com.google.dagger:hilt-android-gradle-plugin:2.52") } }
           plugins {
-              id("com.android.application") version "8.5.2" apply false
-              id("org.jetbrains.kotlin.android") version "2.0.20" apply false
-              id("com.google.dagger.hilt.android") version "2.52" apply false
-              id("org.jetbrains.kotlin.kapt") version "2.0.20" apply false
+            id("com.android.application") version "8.5.2" apply false
+            id("org.jetbrains.kotlin.android") version "2.0.20" apply false
+            id("com.google.dagger.hilt.android") version "2.52" apply false
+            id("org.jetbrains.kotlin.kapt") version "2.0.20" apply false
           }
           EOF
 
           # --- app/build.gradle.kts ---
           cat > app/build.gradle.kts <<'EOF'
           plugins {
-              id("com.android.application")
-              id("org.jetbrains.kotlin.android")
-              id("com.google.dagger.hilt.android")
-              id("org.jetbrains.kotlin.kapt")
+            id("com.android.application")
+            id("org.jetbrains.kotlin.android")
+            id("com.google.dagger.hilt.android")
+            id("org.jetbrains.kotlin.kapt")
           }
           android {
-              namespace = "com.oneplan.app"
-              compileSdk = 34
-              defaultConfig {
-                  applicationId = "com.oneplan.app"
-                  minSdk = 24
-                  targetSdk = 34
-                  versionCode = 1
-                  versionName = "0.1.0"
-                  testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-                  vectorDrawables { useSupportLibrary = true }
+            namespace = "com.oneplan.app"
+            compileSdk = 34
+            defaultConfig {
+              applicationId = "com.oneplan.app"
+              minSdk = 24
+              targetSdk = 34
+              versionCode = 1
+              versionName = "0.1.0"
+              testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+              vectorDrawables { useSupportLibrary = true }
+            }
+            buildTypes {
+              release {
+                isMinifyEnabled = true
+                proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
               }
-              buildTypes {
-                  release {
-                      isMinifyEnabled = true
-                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
-                  }
-                  debug { isMinifyEnabled = false }
-              }
-              compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
-              kotlinOptions { jvmTarget = "17" }
-              buildFeatures { compose = true; buildConfig = true }
-              composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
-              packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+              debug { isMinifyEnabled = false }
+            }
+            compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
+            kotlinOptions { jvmTarget = "17" }
+            buildFeatures { compose = true; buildConfig = true }
+            composeOptions { kotlinCompilerExtensionVersion = "1.5.15" }
+            packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
           }
           dependencies {
-              val composeBom = platform("androidx.compose:compose-bom:2024.09.03")
-              implementation(composeBom)
-              androidTestImplementation(composeBom)
-              implementation("androidx.core:core-ktx:1.13.1")
-              implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
-              implementation("androidx.activity:activity-compose:1.9.2")
-              implementation("androidx.compose.ui:ui")
-              implementation("androidx.compose.material3:material3")
-              implementation("androidx.compose.ui:ui-tooling-preview")
-              debugImplementation("androidx.compose.ui:ui-tooling")
-              implementation("androidx.navigation:navigation-compose:2.8.1")
-              implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
-              implementation("com.google.dagger:hilt-android:2.52")
-              kapt("com.google.dagger:hilt-compiler:2.52")
-              testImplementation("junit:junit:4.13.2")
-              androidTestImplementation("androidx.test.ext:junit:1.2.1")
-              androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
-              androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+            val composeBom = platform("androidx.compose:compose-bom:2024.09.03")
+            implementation(composeBom)
+            androidTestImplementation(composeBom)
+
+            implementation("androidx.core:core-ktx:1.13.1")
+            implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
+            implementation("androidx.activity:activity-compose:1.9.2")
+            implementation("androidx.compose.ui:ui")
+            implementation("androidx.compose.material3:material3")
+            implementation("androidx.compose.ui:ui-tooling-preview")
+            debugImplementation("androidx.compose.ui:ui-tooling")
+            implementation("androidx.navigation:navigation-compose:2.8.1")
+            implementation("androidx.hilt:hilt-navigation-compose:1.2.0")
+
+            implementation("com.google.dagger:hilt-android:2.52")
+            kapt("com.google.dagger:hilt-compiler:2.52")
+
+            testImplementation("junit:junit:4.13.2")
+            androidTestImplementation("androidx.test.ext:junit:1.2.1")
+            androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+            androidTestImplementation("androidx.compose.ui:ui-test-junit4")
           }
           EOF
 
@@ -119,26 +124,23 @@ jobs:
 
           # --- AndroidManifest.xml ---
           cat > app/src/main/AndroidManifest.xml <<'EOF'
-          <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-              package="com.oneplan.app">
-              <uses-permission android:name="android.permission.INTERNET" />
-              <application
-                  android:name=".OnePlanApp"
-                  android:allowBackup="true"
-                  android:label="OnePlan"
-                  android:icon="@mipmap/ic_launcher"
-                  android:roundIcon="@mipmap/ic_launcher_round"
-                  android:supportsRtl="true"
-                  android:theme="@style/Theme.OnePlan">
-                  <activity
-                      android:name=".MainActivity"
-                      android:exported="true">
-                      <intent-filter>
-                          <action android:name="android.intent.action.MAIN" />
-                          <category android:name="android.intent.category.LAUNCHER" />
-                      </intent-filter>
-                  </activity>
-              </application>
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android" package="com.oneplan.app">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <application
+              android:name=".OnePlanApp"
+              android:allowBackup="true"
+              android:label="OnePlan"
+              android:icon="@mipmap/ic_launcher"
+              android:roundIcon="@mipmap/ic_launcher_round"
+              android:supportsRtl="true"
+              android:theme="@style/Theme.OnePlan">
+              <activity android:name=".MainActivity" android:exported="true">
+                <intent-filter>
+                  <action android:name="android.intent.action.MAIN" />
+                  <category android:name="android.intent.category.LAUNCHER" />
+                </intent-filter>
+              </activity>
+            </application>
           </manifest>
           EOF
 
@@ -153,10 +155,10 @@ jobs:
           cat > app/src/main/java/com/oneplan/app/navigation/Route.kt <<'EOF'
           package com.oneplan.app.navigation
           sealed class Route(val path: String){
-              data object Home: Route("home")
-              data object Budget: Route("budget")
-              data object Meals: Route("meals")
-              data object Settings: Route("settings")
+            data object Home: Route("home")
+            data object Budget: Route("budget")
+            data object Meals: Route("meals")
+            data object Settings: Route("settings")
           }
           EOF
 
@@ -166,7 +168,7 @@ jobs:
           import androidx.compose.material3.lightColorScheme
           import androidx.compose.runtime.Composable
           @Composable fun OnePlanTheme(content: @Composable () -> Unit){
-              MaterialTheme(colorScheme = lightColorScheme(), content = content)
+            MaterialTheme(colorScheme = lightColorScheme(), content = content)
           }
           EOF
 
@@ -178,11 +180,11 @@ jobs:
           import androidx.compose.ui.Modifier
           import androidx.compose.ui.unit.dp
           @Composable fun HomeScreen(){
-              Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)){
-                  Text("OnePlan", style=MaterialTheme.typography.headlineMedium)
-                  Text("Your daily hub for money + meals.")
-                  Button(onClick={}, enabled=false){ Text("Quick Add (coming soon)") }
-              }
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)){
+              Text("OnePlan", style=MaterialTheme.typography.headlineMedium)
+              Text("Your daily hub for money + meals.")
+              Button(onClick={}, enabled=false){ Text("Quick Add (coming soon)") }
+            }
           }
           EOF
 
@@ -194,10 +196,10 @@ jobs:
           import androidx.compose.ui.Modifier
           import androidx.compose.ui.unit.dp
           @Composable fun BudgetScreen(){
-              Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)){
-                  Text("Budget", style=MaterialTheme.typography.headlineSmall)
-                  Text("Track income & expenses (DB wiring next).")
-              }
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)){
+              Text("Budget", style=MaterialTheme.typography.headlineSmall)
+              Text("Track income & expenses (DB wiring next).")
+            }
           }
           EOF
 
@@ -209,10 +211,10 @@ jobs:
           import androidx.compose.ui.Modifier
           import androidx.compose.ui.unit.dp
           @Composable fun MealsScreen(){
-              Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)){
-                  Text("Meals", style=MaterialTheme.typography.headlineSmall)
-                  Text("Plan meals & calories (DB wiring next).")
-              }
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)){
+              Text("Meals", style=MaterialTheme.typography.headlineSmall)
+              Text("Plan meals & calories (DB wiring next).")
+            }
           }
           EOF
 
@@ -224,10 +226,10 @@ jobs:
           import androidx.compose.ui.Modifier
           import androidx.compose.ui.unit.dp
           @Composable fun SettingsScreen(){
-              Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)){
-                  Text("Settings", style=MaterialTheme.typography.headlineSmall)
-                  Text("Dark mode & backup (coming soon).")
-              }
+            Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement=Arrangement.spacedBy(12.dp)){
+              Text("Settings", style=MaterialTheme.typography.headlineSmall)
+              Text("Dark mode & backup (coming soon).")
+            }
           }
           EOF
 
@@ -253,34 +255,34 @@ jobs:
           import dagger.hilt.android.AndroidEntryPoint
           @AndroidEntryPoint
           class MainActivity : ComponentActivity() {
-              override fun onCreate(savedInstanceState: Bundle?) {
-                  super.onCreate(savedInstanceState)
-                  enableEdgeToEdge()
-                  setContent {
-                      OnePlanTheme {
-                          val nav = rememberNavController()
-                          val current by nav.currentBackStackEntryAsState()
-                          val route = current?.destination?.route ?: Route.Home.path
-                          Scaffold(
-                              bottomBar = {
-                                  NavigationBar {
-                                      NavigationBarItem(selected=route==Route.Home.path, onClick={nav.navigate(Route.Home.path)}, icon={Icon(Icons.Default.Home,null)}, label={Text("Home")})
-                                      NavigationBarItem(selected=route==Route.Budget.path, onClick={nav.navigate(Route.Budget.path)}, icon={Icon(Icons.Default.Savings,null)}, label={Text("Budget")})
-                                      NavigationBarItem(selected=route==Route.Meals.path, onClick={nav.navigate(Route.Meals.path)}, icon={Icon(Icons.Default.Restaurant,null)}, label={Text("Meals")})
-                                      NavigationBarItem(selected=route==Route.Settings.path, onClick={nav.navigate(Route.Settings.path)}, icon={Icon(Icons.Default.Settings,null)}, label={Text("Settings")})
-                                  }
-                              }
-                          ){ padding ->
-                              NavHost(nav, Route.Home.path, Modifier.padding(padding)) {
-                                  composable(Route.Home.path){ HomeScreen() }
-                                  composable(Route.Budget.path){ BudgetScreen() }
-                                  composable(Route.Meals.path){ MealsScreen() }
-                                  composable(Route.Settings.path){ SettingsScreen() }
-                              }
-                          }
+            override fun onCreate(savedInstanceState: Bundle?) {
+              super.onCreate(savedInstanceState)
+              enableEdgeToEdge()
+              setContent {
+                OnePlanTheme {
+                  val nav = rememberNavController()
+                  val current by nav.currentBackStackEntryAsState()
+                  val route = current?.destination?.route ?: Route.Home.path
+                  Scaffold(
+                    bottomBar = {
+                      NavigationBar {
+                        NavigationBarItem(selected=route==Route.Home.path, onClick={nav.navigate(Route.Home.path)}, icon={Icon(Icons.Default.Home,null)}, label={Text("Home")})
+                        NavigationBarItem(selected=route==Route.Budget.path, onClick={nav.navigate(Route.Budget.path)}, icon={Icon(Icons.Default.Savings,null)}, label={Text("Budget")})
+                        NavigationBarItem(selected=route==Route.Meals.path, onClick={nav.navigate(Route.Meals.path)}, icon={Icon(Icons.Default.Restaurant,null)}, label={Text("Meals")})
+                        NavigationBarItem(selected=route==Route.Settings.path, onClick={nav.navigate(Route.Settings.path)}, icon={Icon(Icons.Default.Settings,null)}, label={Text("Settings")})
                       }
+                    }
+                  ){ padding ->
+                    NavHost(nav, Route.Home.path, Modifier.padding(padding)) {
+                      composable(Route.Home.path){ HomeScreen() }
+                      composable(Route.Budget.path){ BudgetScreen() }
+                      composable(Route.Meals.path){ MealsScreen() }
+                      composable(Route.Settings.path){ SettingsScreen() }
+                    }
                   }
+                }
               }
+            }
           }
           EOF
 
@@ -290,11 +292,11 @@ jobs:
           EOF
           cat > app/src/main/res/values/themes.xml <<'EOF'
           <resources xmlns:tools="http://schemas.android.com/tools">
-              <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
+            <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
           </resources>
           EOF
 
-          # --- gradle wrapper (download real jar) ---
+          # --- Gradle wrapper (download jar only) ---
           curl -fsSL -o gradle-8.7-bin.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
           unzip -p gradle-8.7-bin.zip gradle-8.7/lib/gradle-wrapper-*.jar > gradle/wrapper/gradle-wrapper.jar
           rm -f gradle-8.7-bin.zip
@@ -338,7 +340,7 @@ jobs:
           *.jks
           EOF
 
-          # --- CI: build APK on every push ---
+          # --- CI that builds APK on every push (created in PR) ---
           cat > .github/workflows/android-ci.yml <<'EOF'
           name: OnePlanAndroid — CI
           on:
@@ -367,30 +369,35 @@ jobs:
                     path: '**/build/outputs/apk/debug/*.apk'
           EOF
 
-               - name: Commit & push to bootstrap branch
+      - name: Commit & push to bootstrap branch
         shell: bash
         run: |
-          set -euxo pipefail
+          set -euo pipefail
           git config user.name "oneplan-bot"
           git config user.email "oneplan-bot@users.noreply.github.com"
           git checkout -B bootstrap
           git add -A
-          git commit -m "chore: generate OnePlanAndroid project and CI" || echo "No changes"
+          git commit -m "bootstrap: add OnePlanAndroid project + CI" || echo "No changes"
           git push -u origin bootstrap
 
       - name: Open PR to main (idempotent)
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const {owner, repo} = context.repo;
-            const prs = await github.rest.pulls.list({ owner, repo, state: 'open', head: `${owner}:bootstrap` });
-            if (prs.data.length === 0) {
-              await github.rest.pulls.create({
-                owner, repo,
-                head: 'bootstrap',
-                base: 'main',
-                title: 'Bootstrap: add OnePlanAndroid project + CI',
-                body: 'This PR adds the Android project and the CI workflow. Merge to enable Actions and produce APK artifacts.'
-              });
-            }
+        id: openpr
+        script: |
+          const {owner, repo} = context.repo;
+          const head = `${owner}:bootstrap`;
+          const prs = await github.rest.pulls.list({ owner, repo, state: 'open', head });
+          if (prs.data.length === 0) {
+            const res = await github.rest.pulls.create({
+              owner, repo,
+              head: 'bootstrap',
+              base: 'main',
+              title: 'Bootstrap: add OnePlanAndroid project + CI',
+              body: 'Merge this PR to add the Android project and enable CI builds.'
+            });
+            core.setOutput('pr', res.data.number);
+          } else {
+            core.setOutput('pr', prs.data[0].number);
+          }
