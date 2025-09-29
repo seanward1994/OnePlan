@@ -1,12 +1,8 @@
-// Root build.gradle.kts — keep it minimal to avoid duplicate `plugins {}` issues.
+// Root build.gradle.kts — keep minimal; no plugins{} here.
 allprojects {
     repositories {
         google()
         mavenCentral()
     }
 }
-
-// Optional conveniences
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
-}
+tasks.register("clean", Delete::class) { delete(rootProject.buildDir) }
