@@ -15,7 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 
-class appMainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -27,7 +27,7 @@ class appMainActivity : ComponentActivity() {
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text("OnePlan — Alpha", style = MaterialTheme.typography.headlineMedium)
-                    Text("Hello! If you can see this screen, the app launched successfully.")
+                    Text("If you see this screen, the app launched successfully.")
                     Button(onClick = { clicks++ }) { Text("Tap me ($clicks)") }
                 }
             }
