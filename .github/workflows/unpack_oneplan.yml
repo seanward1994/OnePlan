@@ -11,30 +11,61 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
 
-      - name: Extract ZIP with Python (no external deps)
+      - name: Debug: where are we?
+        run: |
+          echo "PWD=$(pwd)"
+          echo "BRANCH=${GITHUB_REF}"
+          echo "Repo contents BEFORE:"
+          ls -la
+
+      - name: Verify ZIP exists
+        run: |
+          set -euxo pipefail
+          test -f oneplan-android-combined.zip
+          ls -lh oneplan-android-combined.zip
+
+      - name: Extract ZIP with Python (no sudo, no apt)
         run: |
           python3 - <<'PY'
-import zipfile, os, shutil
-ZIP = "oneplan-android-combined.zip"
-assert os.path.exists(ZIP), f"{ZIP} not found in repo root"
+import zipfile, os, shutil, sys
+zip_name = "oneplan-android-combined.zip"
+print("Checking file:", zip_name, "exists:", os.path.exists(zip_name))
+if not os.path.exists(zip_name):
+    print("ERROR: ZIP not found in", os.listdir(".")); sys.exit(2)
+
 tmp = "_tmp_unpack"
 if os.path.isdir(tmp): shutil.rmtree(tmp)
 os.makedirs(tmp, exist_ok=True)
-with zipfile.ZipFile(ZIP) as z:
+
+with zipfile.ZipFile(zip_name) as z:
     z.extractall(tmp)
 
-# Move contents to repo root (handles single-top-folder or many files)
+# Show what got extracted
+print("Top level in _tmp_unpack:", os.listdir(tmp))
+
+# If there is a single top folder, use its contents
 entries = [os.path.join(tmp, e) for e in os.listdir(tmp)]
 if len(entries) == 1 and os.path.isdir(entries[0]):
     src = entries[0]
+    print("Single top folder:", src, "→ moving its contents up")
     for name in os.listdir(src):
         shutil.move(os.path.join(src, name), ".")
 else:
+    print("Multiple entries at top → moving all up")
     for name in os.listdir(tmp):
         shutil.move(os.path.join(tmp, name), ".")
 shutil.rmtree(tmp)
-print("Extracted to repo root.")
+print("DONE: files moved to repo root.")
 PY
+
+      - name: Show repo after extract
+        run: |
+          echo "Repo contents AFTER:"
+          ls -la
+          echo "Check for app module:"
+          ls -la app || true
+          echo "Check workflows:"
+          ls -la .github/workflows || true
 
       - name: Commit unpacked files
         run: |
