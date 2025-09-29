@@ -1,2 +1,1 @@
-# Keep Compose previews and typical reflection-using code tidy for debug.
-# (Empty for now; release uses default optimize file)
+# Keep Compose/Room basics in debug. Add rules as needed for release.
