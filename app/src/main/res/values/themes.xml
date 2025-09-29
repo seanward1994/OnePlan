@@ -1,3 +1,4 @@
 <resources>
+    <!-- Use Material3 DayNight with no action bar -->
     <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar" />
 </resources>

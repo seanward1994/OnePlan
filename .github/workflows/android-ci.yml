@@ -1,4 +1,5 @@
 name: OnePlanAndroid — CI
+
 on:
   push:
     branches: [ "refactor/v1" ]
@@ -10,28 +11,33 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-      - uses: gradle/actions/setup-gradle@v3
-      - name: Build debug APK
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Assemble debug APK
         run: gradle --no-daemon --stacktrace assembleDebug
+
+      - name: Create FULL_CODE_DUMP.txt
+        run: |
+          echo "# Repo file dump" > FULL_CODE_DUMP.txt
+          echo "" >> FULL_CODE_DUMP.txt
+          git ls-files -z | xargs -0 -I{} bash -c 'echo "----- {} -----"; if file "{}" | grep -qi text; then sed -n "1,400p" "{}"; else echo "(binary)"; fi' >> FULL_CODE_DUMP.txt
+
       - name: Upload APKs
         uses: actions/upload-artifact@v4
         with:
           name: oneplan-debug-apks
           path: app/build/outputs/apk/debug/*.apk
-      - name: Generate FULL_CODE_DUMP.txt
-        shell: bash
-        run: |
-          echo "OnePlan — full code dump ($(date -u +%FT%TZ))" > FULL_CODE_DUMP.txt
-          git ls-files | sort | while read -r f; do
-            echo -e "\n\n===== FILE: $f =====\n" >> FULL_CODE_DUMP.txt
-            sed -e 's/\t/    /g' "$f" >> FULL_CODE_DUMP.txt || true
-          done
-      - name: Upload FULL_CODE_DUMP.txt
+
+      - name: Upload FULL_CODE_DUMP
         uses: actions/upload-artifact@v4
         with:
-          name: oneplan-code-dump
+          name: FULL_CODE_DUMP
           path: FULL_CODE_DUMP.txt

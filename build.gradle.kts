@@ -1,4 +1,7 @@
-plugins {
-  id("com.android.application") version "8.5.2" apply false
-  id("org.jetbrains.kotlin.android") version "2.0.20" apply false
+// Root build.gradle.kts — keep it minimal to avoid duplicate `plugins {}` issues.
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
 }
