@@ -19,13 +19,10 @@ fun BudgetScreen() {
     var showAdd by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { items = repos.budget.list() }
-
     fun reload() = scope.launch { items = repos.budget.list() }
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAdd = true }) { Text("+") }
-        }
+        floatingActionButton = { FloatingActionButton(onClick = { showAdd = true }) { Text("+") } }
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             Text("Budget", style = MaterialTheme.typography.headlineMedium)
@@ -40,9 +37,7 @@ fun BudgetScreen() {
                             }
                             Text("$${"%.2f".format(item.amountCents / 100.0)}")
                             Spacer(Modifier.width(8.dp))
-                            OutlinedButton(onClick = {
-                                scope.launch { repos.budget.remove(item); reload() }
-                            }) { Text("Delete") }
+                            OutlinedButton(onClick = { scope.launch { repos.budget.remove(item); reload() } }) { Text("Delete") }
                         }
                     }
                 }
@@ -53,10 +48,7 @@ fun BudgetScreen() {
     if (showAdd) AddBudgetDialog(
         onDismiss = { showAdd = false },
         onAdd = { label, cents, cat ->
-            scope.launch {
-                repos.budget.add(BudgetItem(label = label, amountCents = cents, category = cat))
-                reload(); showAdd = false
-            }
+            scope.launch { repos.budget.add(BudgetItem(label = label, amountCents = cents, category = cat)); reload(); showAdd = false }
         }
     )
 }

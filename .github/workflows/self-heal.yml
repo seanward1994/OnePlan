@@ -1,0 +1,23 @@
+name: OnePlan — Self Heal
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  heal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+      - name: Run self-heal script
+        run: |
+          bash oneplan_perfect_fix.sh || true
+      - name: Commit & push (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add -A
+          git commit -m "chore(self-heal): repo repaired [skip ci]" || echo "no changes"
+          git push || echo "no push"

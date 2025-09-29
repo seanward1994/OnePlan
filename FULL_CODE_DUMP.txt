@@ -1,4 +1,4 @@
-# OnePlan — full source dump (2025-09-29T21:53:05Z)
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
 
 ## File list
 .github/workflows/android-ci.yml
@@ -53,6 +53,9 @@ on:
     branches: [ main, refactor/v1 ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -70,8 +73,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build debug APK
-        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
 
       - name: Upload APK(s)
         uses: actions/upload-artifact@v4
@@ -80,24 +83,34 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      - name: Full code dump (for review)
+      - name: Generate FULL_CODE_DUMP.txt (root)
         run: |
-          git ls-files -z | xargs -0 -I{} sh -c 'echo "----- {}"; echo; sed -n "1,400p" "{}" || true; echo;'
-        shell: bash
-        continue-on-error: true
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
 
-      - name: Upload FULL_CODE_DUMP
-        if: always()
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
         uses: actions/upload-artifact@v4
         with:
           name: FULL_CODE_DUMP
-          path: |
-            **/*.kt
-            **/*.kts
-            **/*.xml
-            **/*.gradle
-            **/*.md
-            .github/workflows/*.yml
+          path: FULL_CODE_DUMP.txt
 
 
 -----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
@@ -136,11 +149,11 @@ app/build
 
 -----8<----- FILE: .oneplan_versioncode -----8<-----
 
-7
+8
 
 -----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
 
-# OnePlan — full source dump (2025-09-29T21:53:05Z)
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
 
 ## File list
 .github/workflows/android-ci.yml
@@ -195,6 +208,9 @@ on:
     branches: [ main, refactor/v1 ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -212,8 +228,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build debug APK
-        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
 
       - name: Upload APK(s)
         uses: actions/upload-artifact@v4
@@ -222,24 +238,34 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      - name: Full code dump (for review)
+      - name: Generate FULL_CODE_DUMP.txt (root)
         run: |
-          git ls-files -z | xargs -0 -I{} sh -c 'echo "----- {}"; echo; sed -n "1,400p" "{}" || true; echo;'
-        shell: bash
-        continue-on-error: true
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
 
-      - name: Upload FULL_CODE_DUMP
-        if: always()
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
         uses: actions/upload-artifact@v4
         with:
           name: FULL_CODE_DUMP
-          path: |
-            **/*.kt
-            **/*.kts
-            **/*.xml
-            **/*.gradle
-            **/*.md
-            .github/workflows/*.yml
+          path: FULL_CODE_DUMP.txt
 
 
 -----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
@@ -278,10 +304,4855 @@ app/build
 
 -----8<----- FILE: .oneplan_versioncode -----8<-----
 
-7
+8
 
 -----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
 
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Generate FULL_CODE_DUMP.txt (root)
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
+
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+8
+
+-----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
+
+# OnePlan — full source dump (2025-09-29T22:15:53Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+FULL_CODE_DUMP.txt
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
 
 
 -----8<----- FILE: app/build.gradle.kts -----8<-----
@@ -300,12 +5171,12 @@ android {
         applicationId = "com.oneplan.app"
         minSdk = 24
         targetSdk = 34
-        // CI can pass VC via env; fallback to file; default 1
+
         val vc = (System.getenv("VC") ?: runCatching {
             file("${rootDir}/.oneplan_versioncode").takeIf { it.exists() }?.readText()?.trim()
         }.getOrNull() ?: "1").toInt()
         versionCode = vc
-        versionName = "0.3.$vc"
+        versionName = "0.4.$vc"
 
         vectorDrawables { useSupportLibrary = true }
     }
@@ -313,47 +5184,46 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug { isDebuggable = true }
     }
 
-    buildFeatures {
-        compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.12"
-    }
-    packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
-    }
+    buildFeatures { compose = true }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.12" }
+    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlinOptions { jvmTarget = "17" }
 }
 
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.08.00")
-    implementation(composeBom)
-    androidTestImplementation(composeBom)
+    implementation(composeBom); androidTestImplementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
 
+    // Compose
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
+    implementation("androidx.navigation:navigation-compose:2.8.3")
+
+    // Coroutines
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    // DataStore
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Room
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
@@ -365,7 +5235,7 @@ dependencies {
 
 -----8<----- FILE: app/proguard-rules.pro -----8<-----
 
-# (empty for now)
+# (empty)
 
 
 -----8<----- FILE: app/src/main/AndroidManifest.xml -----8<-----
@@ -411,13 +5281,10 @@ fun BudgetScreen() {
     var showAdd by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { items = repos.budget.list() }
-
     fun reload() = scope.launch { items = repos.budget.list() }
 
     Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAdd = true }) { Text("+") }
-        }
+        floatingActionButton = { FloatingActionButton(onClick = { showAdd = true }) { Text("+") } }
     ) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             Text("Budget", style = MaterialTheme.typography.headlineMedium)
@@ -432,9 +5299,7 @@ fun BudgetScreen() {
                             }
                             Text("$${"%.2f".format(item.amountCents / 100.0)}")
                             Spacer(Modifier.width(8.dp))
-                            OutlinedButton(onClick = {
-                                scope.launch { repos.budget.remove(item); reload() }
-                            }) { Text("Delete") }
+                            OutlinedButton(onClick = { scope.launch { repos.budget.remove(item); reload() } }) { Text("Delete") }
                         }
                     }
                 }
@@ -445,10 +5310,7 @@ fun BudgetScreen() {
     if (showAdd) AddBudgetDialog(
         onDismiss = { showAdd = false },
         onAdd = { label, cents, cat ->
-            scope.launch {
-                repos.budget.add(BudgetItem(label = label, amountCents = cents, category = cat))
-                reload(); showAdd = false
-            }
+            scope.launch { repos.budget.add(BudgetItem(label = label, amountCents = cents, category = cat)); reload(); showAdd = false }
         }
     )
 }
@@ -486,40 +5348,16 @@ package com.oneplan.app
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.remember
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            OnePlanTheme {
-                var tab by remember { mutableStateOf(0) }
-                Scaffold(
-                    topBar = {
-                        TopAppBar(title = { Text("OnePlan") })
-                    }
-                ) { inner ->
-                    Column(
-                        modifier = Modifier
-                            .padding(inner)
-                            .fillMaxSize()
-                    ) {
-                        TabRow(selectedTabIndex = tab) {
-                            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Budget") })
-                            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("Meals") })
-                        }
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            when (tab) {
-                                0 -> Text("Budget — coming next")
-                                1 -> Text("Meal Planner — coming next")
-                            }
-                        }
-                    }
-                }
+            val repos = remember { Repos(applicationContext) }
+            CompositionLocalProvider(LocalRepos provides repos) {
+                OnePlanTheme { OnePlanApp() }
             }
         }
     }
@@ -549,14 +5387,9 @@ fun MealPlanScreen() {
     var showAdd by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { items = repos.meals.list() }
-
     fun reload() = scope.launch { items = repos.meals.list() }
 
-    Scaffold(
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showAdd = true }) { Text("+") }
-        }
-    ) { pad ->
+    Scaffold(floatingActionButton = { FloatingActionButton(onClick = { showAdd = true }) { Text("+") } }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             Text("Meals", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(12.dp))
@@ -566,11 +5399,9 @@ fun MealPlanScreen() {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(item.title, style = MaterialTheme.typography.titleMedium)
-                                Text("${item.calories} kcal  ${item.day}", style = MaterialTheme.typography.bodySmall)
+                                Text("${item.calories} kcal  ${item.day}", style = MaterialTheme.typTypography.bodySmall)
                             }
-                            OutlinedButton(onClick = { scope.launch { repos.meals.remove(item); reload() } }) {
-                                Text("Delete")
-                            }
+                            OutlinedButton(onClick = { scope.launch { repos.meals.remove(item); reload() } }) { Text("Delete") }
                         }
                     }
                 }
@@ -580,9 +5411,7 @@ fun MealPlanScreen() {
 
     if (showAdd) AddMealDialog(
         onDismiss = { showAdd = false },
-        onAdd = { title, kcal, day ->
-            scope.launch { repos.meals.add(Meal(title = title, calories = kcal, day = day)); reload(); showAdd = false }
-        }
+        onAdd = { title, kcal, day -> scope.launch { repos.meals.add(Meal(title = title, calories = kcal, day = day)); reload(); showAdd = false } }
     )
 }
 
@@ -602,9 +5431,7 @@ private fun AddMealDialog(onDismiss: () -> Unit, onAdd: (String, Int, String) ->
             }
         },
         confirmButton = {
-            TextButton(onClick = {
-                onAdd(title.text.trim(), calories.text.toIntOrNull() ?: 0, day.text.trim())
-            }) { Text("Add") }
+            TextButton(onClick = { onAdd(title.text.trim(), calories.text.toIntOrNull() ?: 0, day.text.trim()) }) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
@@ -682,8 +5509,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 
 @Composable
@@ -700,18 +5527,8 @@ fun SettingsScreen() {
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium)
-
-        OutlinedTextField(
-            value = currencyInput,
-            onValueChange = { currencyInput = it },
-            label = { Text("Currency (e.g. USD, EUR)") }
-        )
-        OutlinedTextField(
-            value = caloriesInput,
-            onValueChange = { caloriesInput = it },
-            label = { Text("Daily Calories Target") }
-        )
-
+        OutlinedTextField(value = currencyInput, onValueChange = { currencyInput = it }, label = { Text("Currency (e.g. USD, EUR)") })
+        OutlinedTextField(value = caloriesInput, onValueChange = { caloriesInput = it }, label = { Text("Daily Calories Target") })
         Button(onClick = {
             scope.launch {
                 repos.setCurrency(ctx, currencyInput.ifBlank { "USD" })
@@ -719,7 +5536,6 @@ fun SettingsScreen() {
                 Toast.makeText(ctx, "Saved", Toast.LENGTH_SHORT).show()
             }
         }) { Text("Save") }
-
         Text("Current: $currency • $daily kcal")
     }
 }
@@ -737,10 +5553,7 @@ private val Colors = lightColorScheme()
 
 @Composable
 fun OnePlanTheme(content: @Composable () -> Unit) {
-    MaterialTheme(
-        colorScheme = Colors,
-        content = content
-    )
+    MaterialTheme(colorScheme = Colors, content = content)
 }
 
 
@@ -764,31 +5577,19 @@ data class Meal(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val calories: Int = 0,
-    val day: String = "" // e.g., "Mon", "2025-09-29", etc.
+    val day: String = ""
 )
 
-@Dao
-interface BudgetDao {
-    @Query("SELECT * FROM budget_items ORDER BY timestamp DESC")
-    suspend fun list(): List<BudgetItem>
-
-    @Insert
-    suspend fun add(item: BudgetItem)
-
-    @Delete
-    suspend fun remove(item: BudgetItem)
+@Dao interface BudgetDao {
+    @Query("SELECT * FROM budget_items ORDER BY timestamp DESC") suspend fun list(): List<BudgetItem>
+    @Insert suspend fun add(item: BudgetItem)
+    @Delete suspend fun remove(item: BudgetItem)
 }
 
-@Dao
-interface MealDao {
-    @Query("SELECT * FROM meals ORDER BY id DESC")
-    suspend fun list(): List<Meal>
-
-    @Insert
-    suspend fun add(meal: Meal)
-
-    @Delete
-    suspend fun remove(meal: Meal)
+@Dao interface MealDao {
+    @Query("SELECT * FROM meals ORDER BY id DESC") suspend fun list(): List<Meal>
+    @Insert suspend fun add(meal: Meal)
+    @Delete suspend fun remove(meal: Meal)
 }
 
 @Database(entities = [BudgetItem::class, Meal::class], version = 1)
@@ -803,6 +5604,7 @@ abstract class OnePlanDb : RoomDatabase() {
 package com.oneplan.app
 
 import android.content.Context
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -812,28 +5614,23 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 val Context.dataStore by preferencesDataStore("oneplan_prefs")
+val LocalRepos = staticCompositionLocalOf<Repos> { error("Repos not provided") }
 
 class Repos(context: Context) {
-    private val db = Room.databaseBuilder(
-        context, OnePlanDb::class.java, "oneplan.db"
-    ).fallbackToDestructiveMigration().build()
+    private val db = Room.databaseBuilder(context, OnePlanDb::class.java, "oneplan.db")
+        .fallbackToDestructiveMigration().build()
 
     val budget = db.budget()
     val meals = db.meals()
 
-    // Simple settings
     private val currencyKey = stringPreferencesKey("currency")
     private val caloriesKey = intPreferencesKey("daily_calories")
 
     val currencyFlow: Flow<String> = context.dataStore.data.map { it[currencyKey] ?: "USD" }
     val dailyCaloriesFlow: Flow<Int> = context.dataStore.data.map { it[caloriesKey] ?: 2000 }
 
-    suspend fun setCurrency(context: Context, value: String) {
-        context.dataStore.edit { it[currencyKey] = value }
-    }
-    suspend fun setDailyCalories(context: Context, value: Int) {
-        context.dataStore.edit { it[caloriesKey] = value }
-    }
+    suspend fun setCurrency(context: Context, value: String) { context.dataStore.edit { it[currencyKey] = value } }
+    suspend fun setDailyCalories(context: Context, value: Int) { context.dataStore.edit { it[caloriesKey] = value } }
 }
 
 
@@ -880,8 +5677,7 @@ class Repos(context: Context) {
 
 -----8<----- FILE: build.gradle.kts -----8<-----
 
-// Root kept minimal to avoid duplicate `plugins {}` issues.
-// Repositories for all projects:
+// Minimal root to avoid duplicate `plugins {}` and keep repos consistent.
 allprojects {
     repositories {
         google()
@@ -892,11 +5688,10 @@ allprojects {
 
 -----8<----- FILE: gradle.properties -----8<-----
 
-# Gradle properties (can be empty for CI convenience)
 org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
 android.useAndroidX=true
 kotlin.code.style=official
-# Open Actions to download artifacts: Actions → OnePlanAndroid — CI → latest run.
+# Artifacts live in Actions → OnePlanAndroid — CI
 
 
 -----8<----- FILE: gradle/wrapper/gradle-wrapper.jar -----8<-----
@@ -1013,9 +5808,9 @@ e��w��C�Y�Y��ae�|Ŗ�
 
 -----8<----- FILE: gradle/wrapper/gradle-wrapper.properties -----8<-----
 
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-bin.zip
 distributionBase=GRADLE_USER_HOME
 distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-bin.zip
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists
 
@@ -1050,7 +5845,7 @@ pluginManagement {
     }
 }
 dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS) // safe for simple projects
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()

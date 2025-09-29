@@ -1,5 +1,4 @@
-// Root kept minimal to avoid duplicate `plugins {}` issues.
-// Repositories for all projects:
+// Minimal root to avoid duplicate `plugins {}` and keep repos consistent.
 allprojects {
     repositories {
         google()

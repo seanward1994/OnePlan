@@ -6,6 +6,9 @@ on:
     branches: [ main, refactor/v1 ]
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -23,8 +26,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Build debug APK
-        run: gradle --no-daemon --stacktrace assembleDebug
+      - name: Build debug APK (wrapper)
+        run: ./gradlew --no-daemon --stacktrace assembleDebug
 
       - name: Upload APK(s)
         uses: actions/upload-artifact@v4
@@ -33,21 +36,31 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      - name: Full code dump (for review)
+      - name: Generate FULL_CODE_DUMP.txt (root)
         run: |
-          git ls-files -z | xargs -0 -I{} sh -c 'echo "----- {}"; echo; sed -n "1,400p" "{}" || true; echo;'
-        shell: bash
-        continue-on-error: true
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+            | while read -r f; do
+                echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+                sed -n '1,5000p' "$f" >> "$OUT" || true
+              done
 
-      - name: Upload FULL_CODE_DUMP
-        if: always()
+      - name: Commit FULL_CODE_DUMP.txt to repo (skip CI)
+        run: |
+          git config user.name  "oneplan-bot"
+          git config user.email "oneplan-bot@users.noreply.github.com"
+          git add FULL_CODE_DUMP.txt
+          git commit -m "chore(dump): update FULL_CODE_DUMP.txt [skip ci]" || echo "no changes"
+          git push || echo "no push"
+
+      - name: Upload dump artifact
         uses: actions/upload-artifact@v4
         with:
           name: FULL_CODE_DUMP
-          path: |
-            **/*.kt
-            **/*.kts
-            **/*.xml
-            **/*.gradle
-            **/*.md
-            .github/workflows/*.yml
+          path: FULL_CODE_DUMP.txt

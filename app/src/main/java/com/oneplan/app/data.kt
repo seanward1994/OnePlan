@@ -16,31 +16,19 @@ data class Meal(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val title: String,
     val calories: Int = 0,
-    val day: String = "" // e.g., "Mon", "2025-09-29", etc.
+    val day: String = ""
 )
 
-@Dao
-interface BudgetDao {
-    @Query("SELECT * FROM budget_items ORDER BY timestamp DESC")
-    suspend fun list(): List<BudgetItem>
-
-    @Insert
-    suspend fun add(item: BudgetItem)
-
-    @Delete
-    suspend fun remove(item: BudgetItem)
+@Dao interface BudgetDao {
+    @Query("SELECT * FROM budget_items ORDER BY timestamp DESC") suspend fun list(): List<BudgetItem>
+    @Insert suspend fun add(item: BudgetItem)
+    @Delete suspend fun remove(item: BudgetItem)
 }
 
-@Dao
-interface MealDao {
-    @Query("SELECT * FROM meals ORDER BY id DESC")
-    suspend fun list(): List<Meal>
-
-    @Insert
-    suspend fun add(meal: Meal)
-
-    @Delete
-    suspend fun remove(meal: Meal)
+@Dao interface MealDao {
+    @Query("SELECT * FROM meals ORDER BY id DESC") suspend fun list(): List<Meal>
+    @Insert suspend fun add(meal: Meal)
+    @Delete suspend fun remove(meal: Meal)
 }
 
 @Database(entities = [BudgetItem::class, Meal::class], version = 1)
