@@ -1,0 +1,875 @@
+# OnePlan â€” full source dump (2025-09-29T20:58:58Z)
+
+## File list
+.github/workflows/android-ci.yml
+.github/workflows/windows-stub.yml
+.gitignore
+.oneplan_versioncode
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/BudgetScreen.kt
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/MealPlanScreen.kt
+app/src/main/java/com/oneplan/app/Nav.kt
+app/src/main/java/com/oneplan/app/SettingsScreen.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/java/com/oneplan/app/data.kt
+app/src/main/java/com/oneplan/app/di.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/mipmap-hdpi/ic_launcher.png
+app/src/main/res/mipmap-hdpi/ic_launcher_round.png
+app/src/main/res/mipmap-mdpi/ic_launcher.png
+app/src/main/res/mipmap-mdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xhdpi/ic_launcher.png
+app/src/main/res/mipmap-xhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+gradle.properties
+gradle/wrapper/gradle-wrapper.jar
+gradle/wrapper/gradle-wrapper.properties
+gradlew
+gradlew.bat
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid â€” CI
+on:
+  push:
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
+        run: gradle --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Full code dump (for review)
+        run: |
+          git ls-files -z | xargs -0 -I{} sh -c 'echo "----- {}"; echo; sed -n "1,400p" "{}" || true; echo;'
+        shell: bash
+        continue-on-error: true
+
+      - name: Upload FULL_CODE_DUMP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: |
+            **/*.kt
+            **/*.kts
+            **/*.xml
+            **/*.gradle
+            **/*.md
+            .github/workflows/*.yml
+
+
+-----8<----- FILE: .github/workflows/windows-stub.yml -----8<-----
+
+name: OnePlan Windows â€” Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+6
+
+-----8<----- FILE: app/build.gradle.kts -----8<-----
+
+plugins {
+    id("com.android.application")
+    kotlin("android")
+    id("com.google.devtools.ksp") version "1.9.23-1.0.20"
+}
+
+android {
+    namespace = "com.oneplan.app"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.oneplan.app"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = (System.getenv("VC") ?: "1").toInt()
+        versionName = "0.2.1"
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug { isMinifyEnabled = false }
+    }
+
+    buildFeatures { compose = true }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+    packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+}
+
+dependencies {
+    // Compose BOM
+    val composeBom = platform("androidx.compose:compose-bom:2024.09.02")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    // Compose core + Material3 + Navigation
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3:1.3.0")
+    implementation("androidx.navigation:navigation-compose:2.8.0")
+    implementation("androidx.compose.material:material-icons-extended:1.7.3")
+
+    // Lifecycle
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.6")
+
+    // Room + KSP
+    val room = "2.6.1"
+    implementation("androidx.room:room-runtime:$room")
+    implementation("androidx.room:room-ktx:$room")
+    ksp("androidx.room:room-compiler:$room")
+
+    // DataStore (Preferences)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Coroutines on Android (for Room/Compose)
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
+
+    // Material Components (XML theme parent)
+    implementation("com.google.android.material:material:1.12.0")
+
+    // Debug
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+}
+
+
+-----8<----- FILE: app/proguard-rules.pro -----8<-----
+
+# Keep Compose/Room basics in debug. Add rules as needed for release.
+
+
+-----8<----- FILE: app/src/main/AndroidManifest.xml -----8<-----
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <application
+      android:label="OnePlan"
+      android:icon="@mipmap/ic_launcher"
+      android:roundIcon="@mipmap/ic_launcher_round"
+      android:theme="@style/Theme.OnePlan">
+    <activity
+        android:name="com.oneplan.app.MainActivity"
+        android:exported="true">
+      <intent-filter>
+        <action android:name="android.intent.action.MAIN"/>
+        <category android:name="android.intent.category.LAUNCHER"/>
+      </intent-filter>
+    </activity>
+  </application>
+</manifest>
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/BudgetScreen.kt -----8<-----
+
+package com.oneplan.app
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+
+@Composable
+fun BudgetScreen() {
+    val repos = LocalRepos.current
+    val scope = rememberCoroutineScope()
+    var items by remember { mutableStateOf(listOf<BudgetItem>()) }
+    var showAdd by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { items = repos.budget.list() }
+
+    fun reload() = scope.launch { items = repos.budget.list() }
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAdd = true }) { Text("+") }
+        }
+    ) { pad ->
+        Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
+            Text("Budget", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(12.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(items) { item ->
+                    Card {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(item.label, style = MaterialTheme.typography.titleMedium)
+                                Text(item.category, style = MaterialTheme.typography.bodySmall)
+                            }
+                            Text("$${"%.2f".format(item.amountCents / 100.0)}")
+                            Spacer(Modifier.width(8.dp))
+                            OutlinedButton(onClick = {
+                                scope.launch { repos.budget.remove(item); reload() }
+                            }) { Text("Delete") }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAdd) AddBudgetDialog(
+        onDismiss = { showAdd = false },
+        onAdd = { label, cents, cat ->
+            scope.launch {
+                repos.budget.add(BudgetItem(label = label, amountCents = cents, category = cat))
+                reload(); showAdd = false
+            }
+        }
+    )
+}
+
+@Composable
+private fun AddBudgetDialog(onDismiss: () -> Unit, onAdd: (String, Long, String) -> Unit) {
+    var label by remember { mutableStateOf(TextFieldValue("")) }
+    var amount by remember { mutableStateOf(TextFieldValue("")) }
+    var category by remember { mutableStateOf(TextFieldValue("General")) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Budget Item") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(label = { Text("Label") }, value = label, onValueChange = { label = it })
+                OutlinedTextField(label = { Text("Amount (e.g. 12.34)") }, value = amount, onValueChange = { amount = it })
+                OutlinedTextField(label = { Text("Category") }, value = category, onValueChange = { category = it })
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                val cents = ((amount.text.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                onAdd(label.text.trim(), cents, category.text.trim().ifEmpty { "General" })
+            }) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/MainActivity.kt -----8<-----
+
+package com.oneplan.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
+import androidx.compose.ui.platform.LocalContext
+
+val LocalRepos = staticCompositionLocalOf<Repos> { error("Repos not provided") }
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        val repos = Repos(this)
+        setContent {
+            MaterialTheme {
+                CompositionLocalProvider(LocalRepos provides repos) {
+                    OnePlanApp()
+                }
+            }
+        }
+    }
+}
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/MealPlanScreen.kt -----8<-----
+
+package com.oneplan.app
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
+
+@Composable
+fun MealPlanScreen() {
+    val repos = LocalRepos.current
+    val scope = rememberCoroutineScope()
+    var items by remember { mutableStateOf(listOf<Meal>()) }
+    var showAdd by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) { items = repos.meals.list() }
+
+    fun reload() = scope.launch { items = repos.meals.list() }
+
+    Scaffold(
+        floatingActionButton = {
+            FloatingActionButton(onClick = { showAdd = true }) { Text("+") }
+        }
+    ) { pad ->
+        Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
+            Text("Meals", style = MaterialTheme.typography.headlineMedium)
+            Spacer(Modifier.height(12.dp))
+            LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                items(items) { item ->
+                    Card {
+                        Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Column(Modifier.weight(1f)) {
+                                Text(item.title, style = MaterialTheme.typography.titleMedium)
+                                Text("${item.calories} kcal  ${item.day}", style = MaterialTheme.typography.bodySmall)
+                            }
+                            OutlinedButton(onClick = { scope.launch { repos.meals.remove(item); reload() } }) {
+                                Text("Delete")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAdd) AddMealDialog(
+        onDismiss = { showAdd = false },
+        onAdd = { title, kcal, day ->
+            scope.launch { repos.meals.add(Meal(title = title, calories = kcal, day = day)); reload(); showAdd = false }
+        }
+    )
+}
+
+@Composable
+private fun AddMealDialog(onDismiss: () -> Unit, onAdd: (String, Int, String) -> Unit) {
+    var title by remember { mutableStateOf(TextFieldValue("")) }
+    var calories by remember { mutableStateOf(TextFieldValue("")) }
+    var day by remember { mutableStateOf(TextFieldValue("")) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Add Meal") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(label = { Text("Title") }, value = title, onValueChange = { title = it })
+                OutlinedTextField(label = { Text("Calories") }, value = calories, onValueChange = { calories = it })
+                OutlinedTextField(label = { Text("Day") }, value = day, onValueChange = { day = it })
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onAdd(title.text.trim(), calories.text.toIntOrNull() ?: 0, day.text.trim())
+            }) { Text("Add") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+    )
+}
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/Nav.kt -----8<-----
+
+package com.oneplan.app
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Settings
+
+@Composable
+fun OnePlanApp() {
+    val nav = rememberNavController()
+    Scaffold(
+        topBar = { TopAppBar(title = { Text("OnePlan") }) },
+        bottomBar = { OnePlanBottomBar(nav) }
+    ) { pad ->
+        NavHost(navController = nav, startDestination = "budget", modifier = Modifier.padding(pad)) {
+            composable("budget") { BudgetScreen() }
+            composable("meals") { MealPlanScreen() }
+            composable("settings") { SettingsScreen() }
+        }
+    }
+}
+
+@Composable
+fun OnePlanBottomBar(nav: NavHostController) {
+    data class Item(val route: String, val label: String, val icon: @Composable () -> Unit)
+    val items = listOf(
+        Item("budget", "Budget", { Icon(Icons.Filled.Home, contentDescription = "Budget") }),
+        Item("meals", "Meals", { Icon(Icons.Filled.Restaurant, contentDescription = "Meals") }),
+        Item("settings", "Settings", { Icon(Icons.Filled.Settings, contentDescription = "Settings") }),
+    )
+    NavigationBar {
+        val current by nav.currentBackStackEntryAsState()
+        val route = current?.destination?.route
+        items.forEach { item ->
+            NavigationBarItem(
+                selected = route == item.route,
+                onClick = {
+                    nav.navigate(item.route) {
+                        popUpTo(nav.graph.startDestinationId) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
+                label = { Text(item.label) },
+                icon = item.icon
+            )
+        }
+    }
+}
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/SettingsScreen.kt -----8<-----
+
+package com.oneplan.app
+
+import android.widget.Toast
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalContext
+import kotlinx.coroutines.launch
+
+@Composable
+fun SettingsScreen() {
+    val repos = LocalRepos.current
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    val currency by repos.currencyFlow.collectAsState(initial = "USD")
+    val daily by repos.dailyCaloriesFlow.collectAsState(initial = 2000)
+
+    var currencyInput by remember(currency) { mutableStateOf(currency) }
+    var caloriesInput by remember(daily) { mutableStateOf(daily.toString()) }
+
+    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        Text("Settings", style = MaterialTheme.typography.headlineMedium)
+
+        OutlinedTextField(
+            value = currencyInput,
+            onValueChange = { currencyInput = it },
+            label = { Text("Currency (e.g. USD, EUR)") }
+        )
+        OutlinedTextField(
+            value = caloriesInput,
+            onValueChange = { caloriesInput = it },
+            label = { Text("Daily Calories Target") }
+        )
+
+        Button(onClick = {
+            scope.launch {
+                repos.setCurrency(ctx, currencyInput.ifBlank { "USD" })
+                repos.setDailyCalories(ctx, caloriesInput.toIntOrNull() ?: 2000)
+                Toast.makeText(ctx, "Saved", Toast.LENGTH_SHORT).show()
+            }
+        }) { Text("Save") }
+
+        Text("Current: $currency â€¢ $daily kcal")
+    }
+}
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/Theme.kt -----8<-----
+
+package com.oneplan.app
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+
+private val OnePlanScheme = lightColorScheme()
+
+@Composable
+fun OnePlanTheme(content: @Composable () -> Unit) {
+    MaterialTheme(
+        colorScheme = OnePlanScheme,
+        content = content
+    )
+}
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/data.kt -----8<-----
+
+package com.oneplan.app
+
+import androidx.room.*
+
+@Entity(tableName = "budget_items")
+data class BudgetItem(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val label: String,
+    val amountCents: Long,
+    val category: String = "General",
+    val timestamp: Long = System.currentTimeMillis()
+)
+
+@Entity(tableName = "meals")
+data class Meal(
+    @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    val title: String,
+    val calories: Int = 0,
+    val day: String = "" // e.g., "Mon", "2025-09-29", etc.
+)
+
+@Dao
+interface BudgetDao {
+    @Query("SELECT * FROM budget_items ORDER BY timestamp DESC")
+    suspend fun list(): List<BudgetItem>
+
+    @Insert
+    suspend fun add(item: BudgetItem)
+
+    @Delete
+    suspend fun remove(item: BudgetItem)
+}
+
+@Dao
+interface MealDao {
+    @Query("SELECT * FROM meals ORDER BY id DESC")
+    suspend fun list(): List<Meal>
+
+    @Insert
+    suspend fun add(meal: Meal)
+
+    @Delete
+    suspend fun remove(meal: Meal)
+}
+
+@Database(entities = [BudgetItem::class, Meal::class], version = 1)
+abstract class OnePlanDb : RoomDatabase() {
+    abstract fun budget(): BudgetDao
+    abstract fun meals(): MealDao
+}
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/di.kt -----8<-----
+
+package com.oneplan.app
+
+import android.content.Context
+import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.preferencesDataStore
+import androidx.room.Room
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
+
+val Context.dataStore by preferencesDataStore("oneplan_prefs")
+
+class Repos(context: Context) {
+    private val db = Room.databaseBuilder(
+        context, OnePlanDb::class.java, "oneplan.db"
+    ).fallbackToDestructiveMigration().build()
+
+    val budget = db.budget()
+    val meals = db.meals()
+
+    // Simple settings
+    private val currencyKey = stringPreferencesKey("currency")
+    private val caloriesKey = intPreferencesKey("daily_calories")
+
+    val currencyFlow: Flow<String> = context.dataStore.data.map { it[currencyKey] ?: "USD" }
+    val dailyCaloriesFlow: Flow<Int> = context.dataStore.data.map { it[caloriesKey] ?: 2000 }
+
+    suspend fun setCurrency(context: Context, value: String) {
+        context.dataStore.edit { it[currencyKey] = value }
+    }
+    suspend fun setDailyCalories(context: Context, value: Int) {
+        context.dataStore.edit { it[caloriesKey] = value }
+    }
+}
+
+
+-----8<----- FILE: app/src/main/res/drawable/ic_launcher_foreground.xml -----8<-----
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+  <path android:fillColor="#2F80ED" android:pathData="M0,0h108v108h-108z"/>
+  <path android:fillColor="#FFFFFF" android:pathData="M24,54h60v10h-60z"/>
+</vector>
+
+
+-----8<----- FILE: app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml -----8<-----
+
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@android:color/black"/>
+  <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+</adaptive-icon>
+
+
+-----8<----- FILE: app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml -----8<-----
+
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+  <background android:drawable="@android:color/black"/>
+  <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+</adaptive-icon>
+
+
+-----8<----- FILE: app/src/main/res/values/colors.xml -----8<-----
+
+<resources>
+    <color name="oneplan_primary">#2F80ED</color>
+    <color name="oneplan_on_primary">#FFFFFF</color>
+</resources>
+
+
+-----8<----- FILE: app/src/main/res/values/themes.xml -----8<-----
+
+<resources>
+    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
+</resources>
+
+
+-----8<----- FILE: build.gradle.kts -----8<-----
+
+// Root build.gradle.kts â€” minimal (no plugins block here)
+allprojects { repositories { google(); mavenCentral() } }
+tasks.register("clean", Delete::class) { delete(rootProject.buildDir) }
+
+
+-----8<----- FILE: gradle.properties -----8<-----
+
+# Gradle properties (can be empty for CI convenience)
+org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+android.useAndroidX=true
+kotlin.code.style=official
+# Open Actions to download artifacts: Actions â†’ OnePlanAndroid â€” CI â†’ latest run.
+
+
+-----8<----- FILE: gradle/wrapper/gradle-wrapper.jar -----8<-----
+
+PK     A            	   META-INF/ PK     A ì?   T      META-INF/MANIFEST.MFóMÌËLK-.ÑK-*ÎÌÏ³R0Ô3àåòÌ-ÈIÍMÍ+I,
+ê†d–ä¤Z)¸%¦ä¤bÈÂµZè™órñr PK     A               org/ PK     A               org/gradle/ PK     A               org/gradle/util/ PK     A               org/gradle/util/internal/ PK     A QZÅÁA    >   org/gradle/util/internal/WrapperDistributionUrlConverter.classSmOA~¶/\[Ë‹""¥ ¶€=Ä/Æ‚š˜4œÔğq{]Êâ±w¹n	ú«ğ$’øÕÄßdŒ³×Z^lbâ%7s3ÏÌ3³3{?~}ı`OrÈaŞB1‡ŒX´pßè9¤ñĞˆ’…²…%†¡çRIı‚!Y*×RAS0ŒÖ¤[Ã†ˆŞó†O|-ğ¸_ç‘4vÏ™Òû²Íğ¬D-§ñ¦/œ–¾#•‘â¾ó!âa(¢—²­#Ù ,P;‘¿¨#QH•aÊë×BVKµ~ÄŸ«–ã¦ZÕ®GÎké‹j¹k*¡í7Ä5Ú¼N’ÿ›ƒ!³GÙÛA F®2Ò<ÚA'òD¹ v5÷>nò°wøÜ«cO„¦RÛÂ2ÙnœixÿqğŠ!g˜Şî(-E]¶%‘®+hS2Ì\*¥³¨­ï¯‡²jãlûr‹Æ·bã*€Ş©l8¨tÕÆc¬1<ıßu1Œ]Œómã@x4Â™ËM¸Ÿ”æÇıÉ0LØ¢¹hÙ–Ğ®·/iX¥ò 5MöCÜPxrOzïxDJW—6¸@ZÔu\ºvM0,ı æI€™A’&Ë!ÍH§—ÎÀ¾ÄğÉ¡Ø9‹Q’v7 c¸I:‹<Æ)Ê$F
+IÒÅs$v‰ ¹¹rŠÔwŒŸ#½»LßCg°N‘9Y9¡¨dÌœ§`‰x–‰±‚Vã*….&0·YÄnQå,¦q›Şî7ö‹¬²R„ß¥ïÙ¸ï{˜ëu^ ~PK     A               org/gradle/wrapper/ PK     A ¿°Ò©º    /   org/gradle/wrapper/BootstrapMainStarter$1.classRËnÓ@=Ó¸u1¦„@[Ê£„¶Ğ$Z°bAU$‹ .›‰=M¦rÆÑx?Å†H,ø >
+qìDB]ÌÜÇœsuî½óó×÷ b?À2n­âv€;¸ëcÛÇ=M•gÚh÷\ ÖjŸx‡yª®ÆÚ¨7Óñ@Ùwr1ÓˆóDf'Òê2'=7Ò…@øÊe3YŠá£8·Ãhheš©è“•“‰²Ñ‹<w…cp,µé;i²{Oz “DMœÀn+>“e¤óè¥ÎToeÒ£¾³Ú{í÷”™j+°ö/”JŒW*ÿ#	ı|jU"¶ÎrP²Øõ‘I²¼ ëX¹Qú¸b»!|¬
+lÎZêfrj’‘²İƒÎ2­½ğP }áÆê”¾œ©„Øø»©²!Z¢ö/X—-œj“Æs¯%3Ûcm/®¾82,p—ë­óÖ€&<ş'.Ÿk‰‡óat‰^D+h—;ß ¾TÏï•*ÙÁeŞá@»FKÍ¨ÏÉGD×ÊrK_Qû¼@ïVôæ2§—Ş54ªw×q£*±^17°Iëá&¶p…^@”WqğPK     A Êr'}	  
+  -   org/gradle/wrapper/BootstrapMainStarter.classV[WWşI˜0^"
+AX $HÑÚV T(Ğ –(6ÒÚÉ!ŒNfÒ™	Boön/Ï}ğ­?Á¾ZVí[»VSWW÷™I$	ñk™Ù{Ÿ½¿ıí³÷É?ÿışÀ)ü$#€¤Œ“¸(a6ˆK.Ë˜Ã¼$¼-!%#ŒEWpUÆ5¼#–%A¤e\Ç±,qSHŞ"#á–„1X‘ñŞoÇm| áÃ TáhU,Y±ä$p}"zkòÊ¼ap+©«¶Ím†ÖiÍĞœ_4¶ÌàOš9Îp0¥üJ©°Ê­ëêªN’PÊÌªú²jiâ»"ô;ëùˆ¥L+ŸÈ[jNç‰{–Z,r+qÁ4Û¡EU3Òj9ÜšbØâ•a0º’º£n¨	]5ò‰´ciF~Ê“hfâ’¦ó)jå)Â‘&Æ²rÎ,–õ›Ú<í‚jú¬i8|ÓqÓN™j“0ìí0¸“¸±”ªQ‰ÍBíŠ×ÄvE"´Ğ/rgİÌ1ôÔX|MçY'áéÈòX=q[Å*yn§GfÈ¾ƒ¸ÊŞ]T‹3yv3Ë‹f¶„u*ÍšfäRjÉÈ®sËM®/ÚÀ[#Š¾gNù\Ùo ­^Ô,ÂmZ[2m–¬,Jb©Y!Ç…T07‰‚½\–J†£øØ³I³¤ç"†éDt"ÃágG.»å‰T±EÎ/E4£*ÎiS[-	‘á!{xœáĞ^««w­MÁÜHt†®§Ô“¬Õ((À`*(â#	–‚’X°!á‚Ml)øŸ»t¶Ç½£4^Å:î„(øŸÑ9ç¨m(©‚Ïq_Â
+¾ÄW¾Vğ«p*üSëı"ô·
+¾Ãßã5ÕöÔà„‚ğ#Ãğn nÚCYS¥CFÃaÍ´
+*uëÙèşş«mI¯Õ“Wß¥G›ì­pÌKó7«mÄù©úrÍW,Sû,SÂyáÕ‚wæ¹“Ş²^¨oùh¬±ëöZ¶\S-nP¾±êtªFzÊ.‘Go××-®Ò@èÈ–,á¨úİYÖ“
+ğ6w’MSOôáÚtz¯L¦¡fÔ6™V"µê°:÷œRz{bÏiİOÓÑ‰ÑŒó.o81•ãñœSÑÀ­¶GR7mîÁ@V¼34»æg«•oÒü°İ[íC»f×Œ·6tb³¸ºêİjAŒ=qUÅ¦$]ß'é>01úh¢¯==#Û`¿ÒK^¦µÕ†1L«â Š=F0JV´™õC¢ ßAË•±¿Ñ½_&ä÷ÿ@ÆOï uÒŸ»fHÔ–ñ•!—ÑN
+¥Œm˜ôïà`Ø_Æ¡°?t¸ŒĞd !ëÎŒ/t4]Æ±ÉÖp+ó<Òw×Í°ÿ7t3°~ìdZÄhC/ıbèÇ"HRÎ)¼D?/hhÂ!Ğ"¡9t%!ñÇ˜›d	ãÄHy*âzó‘ŸILĞÏ ?yŠá4^%İmtá^#’^¯ĞãéŞ İY’ÁşEŸDôMºy	Š›¦ÂùÏ$óÑóÌ.Â™‘PÏ6§FË8ñƒôè}ˆŞÑ]ôe¶Ñ_Fd1ş:âı¿@ŠûN=bÜŠ´{ (‰v
+&†\È.H‘f„ì†p 3x‹R¢pnr ûœsÿìi¶çİú_ Ê@”ÒíáÒƒÿPK     A hQş}¢   Ò   #   org/gradle/wrapper/Download$1.class}ŒM
+Â0…ßh5µ*v/‚×½‚?àB\x‚Ø†Ø’’T{7ÀC‰)âÖæ¾÷^ïÇÀCÆ0 $g{s™ÜZÆ[ÛmE¾,Å]&;“ië£²¾Úœ!!Ì¬S\9‘kÉ'ªJ:şË-V„ÑÁé6Zx/=!m«¸FñÓ¥”YM˜şiHç tğnX¡~„~Ğ8\j4ş PK     A Æ$G.  Ø  A   org/gradle/wrapper/Download$DefaultDownloadProgressListener.class¥UßSUşn6›…Í&¤°¡P €	%¨…´µm J%D«Î’Ü†m—]Ül C|êK_ôÉé‹/¡:£o:Ó?ÊñÜKøÑ)àtL&÷ŞÜsÏù¾ïœ³w_ıóÛ ŞÇ·:L|ÜŠL‰aZ9†«-¸¦ã:>‰"‰bç¦[ÈG1ƒYŸêˆá³ÈUÈ"æÄp[Ã¼†;"W«qŸ¡§äùµlÍ·ªÏnûÖæ&÷³%iÌ1´T¹ÃkVÀ.ŸtpÆÛvÏªŞõ½šÏëõ’]¸+]Ïoú|ËöõÃ3Ü¯p7``EÂ¿j»vpávêo9ºÌÎ{UâÚV²]~§±±Æı%kÍ¡ö’W±œeË·Åÿæf8X·ëı3üÕp‚Ó"3E—æ¼cÕëœ®Åkè?¢Qj’Õ¦­XA£_·Ü¯2t¤J­-+ëò {o±˜››š4«Zâ¯›bÏ¥ A‰»µ`2;Ç c„Py4om6'W÷ V—½‚EÕÔ>Vg¥áûdy³fÂyŞö²Å…ÙÇ¾ØK,º(³•†C]ò†›ŒKå^`94G¶ô²× Ÿ‚-XÆâŒ@½¸k çt¡ÛÀô¸Œqb5®ás‹(ÆˆAÏÍ–ÜÃ²†aù‚Òzm†r×¡Ôgn`oğC£@\Õğ¥¯pßÀ×¸¯á†Üÿ¨:‰>Â[X{È+”Ì[´7ƒ’ê>õi¡‡j¿ºÍF’hÔ^~™×àn…çFnÊÓ¢1r¯Ñ+¾íÖ¨ñ¶,§ÁPåSÅãûÈÉ<)qLåOÅé:Nmiİ÷¶¥AH‹æ-ÑÊ†õXôP±(zHÙ°©l=gätš ¾PĞ.:†®¿vÑ44‡DßĞ&{/úh¼HÿÖh_¡ÙLï‚¥3;¥Çv ¤•„_H¯~;¡,Š03ĞÊbˆ³8:Xá~Òƒ’×­)q™\	ä­©7›x?!B_`z õé8—şÊßĞÓá]¨4>}†m†Ú#¿B[æ¿S†Œ/Ñ`¥HV¡+1–„ÉºĞÃº1Ìz1Æú0Åú%»4é%´CvÓx)Én£dÉUF£µ
+ÅLtĞ6=_MÊ¯š”	=İ?¸‹Ö„î¬OªIõFˆY8©şˆ>Á9©îA'Ú‰á—ˆ†°’Nª”Åçh›VGlµ[İEüÏ|S0š2ŞAÉ¸DIB/ÆÁ$K“„rl³,#¥\!rq"Ÿ¥2ªÈÑ{mï‰Â p(¯ E1¹¢)ªÊä-F”tÑÑÔµHª„·™¨*ƒOúŸx&Ú}¿‡s{hÿù°ôŸRê+M4J´)á’|óÒåƒ)ÔÿPK     A v"mpÃ  Ü  4   org/gradle/wrapper/Download$ProxyAuthenticator.classUkSU~N’f“°IC¤©´ÖV‹$P¥EA,V«á")DÔ%Ù	‹énÜl¤ü!?·†ÑÎ8~Ò‹ãåƒc½ãs6—É¥C«3pŞóóŞç}ÏæÇão¾pÅÎàåâ˜	rwUª×‚˜Å+r÷js˜WğZÌÈe!€×¥¼>€EÜP	`)€7Ü!‚7CÄ[2Ú-ï(È
+D«‡UG¿³f[İv½*p:»¯}¦¥kQN/k•9`Î(™šS³u™îÛù†ZÖÌR:çØ†Yšë?Y`ÿ¼aÎ‚@,Ñ,/àËXE]¦6L}¥vgW·ok»eÄ²VA+ç5ÛzóĞçì,4Æªï.Öœ=İtŒ‚æX¶€zË4u;SÖªU	f*kÙ¥tÉÖŠe=}`kÂL/YfÙÒŠ#ıXi¼;åa¥•v6ñ¿°K|Ã%İYcI–]ìÈgX¦ÀåÄXÃÍÔô£XU¸"km]KbúR	häX«Ì¹öUœ„sVø„»@,L÷váD¦]»Sr™¸økPÎªÙı¦!‰·®R2§ŠóxF.+*Îâi«xWÁºŠn«Ø@^Á{*6±%p¶ãšQ.ê¶Š÷±Í$©6H`KÁŠñÇº×Q ’êaÄñŞU|·Ş]£xQAA õßŠóÔNÒsqáD¼	Éz”£³®ZÓ«t’ÓH>{ôDçu%é²d_FÄNàÔÚúê&0ú¤q;ª$ÛëòÓÒYOh¥vêòU´'v¨eß=Ó~IŒÉ~M&ú¯û=š"ƒcµzîšu2ËÄ×puw_/8]›G¬Ó±2{š½hÛÚ!¿>‰±ígóålgdÇÎŸĞW\âw;9|19ı”ÃÔ<8/W¾®x²Ié¡%àIï}j^<Ë5B	ü~E¿á"µxÃšñ/î®}„{•²qr®ïzs¤©Ël?SóQZÉ:|_àÔç(pç¯CÉ&¿„÷[G×Šp©Cıa¾Cdyâ{\ëµ9İm³2ùü±èÊnMLÖ;ÂS÷ˆkè^Ò( ¿³È?HÌCşôı‰«øyüÍ·şvpŒ}áq¡&YjCH`ŒŞ1R•äNĞgãÜI"¬&ü„ç;
+"¿‡P£ Ó©&ö%:H>ıÉñ#ˆû.;²$¿ËÚOnÊK‹6»~¤]vån
+Ón¯®¸/áyJÙÍ3xÏĞ¤tˆX\k×‡ÿPK     A fösî  ©+  !   org/gradle/wrapper/Download.classÍZ	|TÕÕ?'™ä½L^B2@dpTĞUQYŒ$Ì$Ğ€–>’—dd2“ÎÂ¢u·ÖÖ[ÅZµjé"-¶2±‚]ÔÚÍ®¶Ú]Ñ®j÷¯_kÓÿ¹ïÍ–Œ‘~ß÷ûõrç.çŞ³ıÏ9÷NxöŸ=ADø¯nvs±›ÊØ¦DšR§¸©€ËÜô—³‡§Ó!&Ít+Š©˜OpSœgHÏ[Ly¦Æ'ÊLYöÏ’f¶4s¤9IcŸ›*ødœ"Í©Âe®Îódëi:Ÿ®q¥›æğ|7Wqµ,Ö¸i#×ºéë\§q½Îg¸i.Ÿ)+t>K>Ï–™s¤Y(Í"ik¼Dã7Õs™Îò¹Tšsun’Ïót^&Ÿ3ÜTÇË5nÖ¹Eç2juÓK¼RšóåôU·i¼ÚMËy›–q»›	·cÂíwHÓ)ÍZ7½ÂëÜ|wIã×¹ÛMKxyÉŸ2‚zx½›^æ:¿ÃÍ½¼Qvl’™M_¨óE:¿S¶´j¼Y´~—4¦4[¤é“¦_Kšu:_ì¦¼Uç ÎÃ:‡d6,nqÓ¿[çˆ›şÎQcÇej›ÎÛuŞ¡Ñóïtó%|©Îï‘3.Óør¯ĞùJ¯Òùj¯ÑùZ±Õ.ázÎ×ë|ƒÎ7ê|“ÎïÕù}:ß,ß¯ñ4¾…Éh…¬HKĞŒF­(ÓI+¬3Œ­oÃfÿºHx0bE£íhÌ!“S;v.Ç†¬P,ĞgÆÂ˜œÒÓ¹¦sí†ÎÍë[»ümk;AÖ~±¹Í¬š¡Áz,62•´„CÑ˜Š­7ƒqKç[™æ®h]¹¼§½{sgk÷†µ]k6w·u´®íéŞÜÑÖŞŞæomYÛ¹ÂÏÄmùD§—17÷¬\ÙÚµÙß¶±S•ÄTº®kíù]­~ÿæ–U#_ÜÇTŠÀ'¶‡#ƒõƒ³?hÕo˜##V¤¾]-B$ãNsØbr£·ŞŠDáSÙÈÅksóVvÂÉeÑèc„±€XwŠm”x,¬ï0G@Tä†ÌX<ÎÉ^]:Ñ‚gšpFiÈŠmG¶v†­p<Õ—BXSså$ºÏñó×3¹ZÂı–ÈYñá-V¤ÛÜ´ÄÅá>3¸ŞŒdìLºbCh:{2cAæ–ÿ­dm"Ú	}áĞ6×?ÁÒ§Wf3½Ğ8‚
+ ãÈN|¶ÚŸÓ³)æªiĞ¹G2¯È}:L |„"Ë8;G’jÌu~¦¯×n¹Øê‹5Nœ_—øcfßVìS§i|›Æ·k¼›©ãø>nP]>©ƒşH8ã¼"¾}ğ?(ÀqZIÄ¼â?i'ıÿ7”’s‚u 0ˆT7¾‚¨Œ›_)DS¢V¨•eöwYï[QR¹l$¹ú®6;%á(l™•^Y‹ôtµ£¾„*8f+Íp}ÛÚÖ}Öˆ³–9³F5ˆšVO$8n©KL5‚òeI:Ôød„ÔÈz¿cUÔĞq§DXZJ~ÍìïË£œõCÉ@È±Ai6)jHòÔ¶PÌŠ„L,µ"Ë-§ˆ"ål‰HÊÛÔŒ£Cñá.KÄ(…cf°İ
+Æ†2N²ú“S¼öNÖ¹–p\X0ÍÈR<Ë '§—üá¾­VÌ©8Y†U¨"¥ÈÚxl$,sËyP–SBéE?¨ñ‡4¾Sã»4Ş“rü4g<ÆûmvÖ„g(fîÈ”ªo6£¾ñ¨›ŸÓW•¯¹ûRcø[ÜĞ[Ì¨µğìÖPŸ*”§Uæ¨£¹nCeƒVÌŞé°bCaølf]Ä‚[½½&´q’V³‡‘ì»–S+€™;gm¤ÕŒB5=ƒ*Ó6ŠpQa¡‚	:'dìP7Ävµ Oİ¸Dyë‹Í˜Õ“²Ä)¹ı”­¶²\H]¹ôŠ«´ñd§ğÍ4­2ç	n™[D!WÏb{àÜÛÊÓK©¹ÂpÔ¾á…£™“Ë#}ˆ·?ôYp(¯ÉÜX'çhüaƒïá´>mĞCô¸4O8\ì$¸ÊŒ!ÊÂ“ßË÷i|¿Áå~2øc¼—ij’oğÇy¯ÁŸ`6ø“Òû?ŒËê$ùÚ =t·A¦[ºGšûè~Ü'&Ù1÷mnóš÷ôº× i·AGéI bÉ´nD’´øÂàOóg)d6šfª›ŒóÄW‚0Û¯ñ#–?gĞ/éW?ÊNğ(ÿÖ©ù~UëòäCı†~§‰µ
+%Lø6øqş¼ÁOˆ#ğÑä™
+;]ÈnHV)ÜÜãÕìË„›/b _,ì3øIş‚4_Dzô˜€Jƒ/Y|…¾JYÿd™/zJú<»ğ †ç×øbvÖôU"[Gı—~ŠŸ6ø@†¾KÏ¡¶%·7«ìnõg&Rˆ‘Y(2—ä´¯Hó¬Á_s|¿nğ7ø¨Áßäç4ş–Áßæïü]~ˆÉ›t—o»õ¤ Dâ#1«¯÷ïü}~Şàğ™Hã~öç	DNz›B€IËú"áab<e»™Ãà‹3"ÍOEæŸIïçÒüÔz	12I®‡İW*â·3÷È±ôzW|aƒ_æcL»6,ïêlë<ß×Wuw¯ó©áË®¾0^>3óD­>Ü^|é2 L’uÕ‡M¾óU4øú_‘À–¸ĞÔùÖ-SÁ$ `¾xŠ¡¿)GØ…#KœŠThaĞëô†Á¯ğ«ÿ’TŠÖu’CêšU½1ø×ü„BºŠ HÇ%lƒË¿sĞ’¹wnjG©]EºÃv8|2k‰Æ¯ü:¿ûõt¯¬]lğïùYtÉ­Ss&ŸÌî¨Û1¬Ûõ×­0cfï¡ûí&B”à€˜-Z3nCò»(@9ìõmÄ†&ñ[ ê…c¾h|d$6ı>ÌíD®÷­^ß»{ìÌUçd.;¥UdO®sÊ“Äöş³Soê¶9ÕÇpFNU™b‡Ó3Z8Zg;7zYÓ¦ª?'Î‹ÖÏ‹ú*çEÕ¿ù]ƒÿÌA.È‘hÛV¤î›³'ËÃg"%”eU hŸ·Áö·8Ór½ ³#´=9tROrÓ¸›,™û"•™CäĞéŠ„·Ûoåé9ïÙØSO(ˆ0ÈzFeæË7ë®«¿ßR‹L*L5f™JÑè”*²È“†“wÃí´vÄÔ3f#
+VH²ï/©«Y!d]cãz,v:æœ}şˆ\¡WNÜ:q&çùkşÏ^„ríÍ+œ–CœœÌÏÌü"B©“1œ{¦b‘Ë¸ïİQ+æÜa)·Ë,:uFA,¬àYV™õ:§[)œÊÄàÌq4Y¯œ2ğt^ŸÉ«öô\Wzğô¤I„íLõôöß¬•c»Ã:õİ«R=–5§È ¥
+ôÓSA¬ K† \íq½7œÛMã8úO?M²\5¹º©hV«(5#ğœ<RÎJ?y‡·ö"ÑôÃ?óáìMÏe=,e­T9ÃìO™²Ì²’Ì	Ü2_öS ècÉ×±+¢^Ñ•›šÅÜeY*©¥ÜD•ä8;ÚíYÉ'h[úfÅTıo  —¼_øQ5ãÑ–!œ-§L÷ÔZ½ZÁö²à©Û¼o™	 ¤`™§ /Êë6ğ÷YR«4ôW…åëé­Cıtz¦˜FrÕqKªt1º+#æà°z¯ôs|™û?Û&ú"üÌ`t\Œ&a½ÑV±Y¦ƒÔd£“¬êâHæ<|a$q…sÜ¼·	¼$1l2“,Ë±gÓ„=™§Lø`Æ[­ÁĞ¶ğVøoIclš<ìS	\Ö¼3¦¾æÎ¥¡|Ë4«²e²œ ¨H+P8›±qRåPş-“Q#Le'¦›ÈM^ú İ‚ş­D”G·a|;íNï ™ôÁŒñ‡0¾3c|yä¾GÒêóçaõ‰‡5è?ªèÀocôK1÷}í^Œ6Q!¹ğ9¥ªškj¤¼QÊDmú8Z7>‰ÎÆ¶sèèUÙäôIú”ú%ã%«’§z"J¾bô°Ãh4’_K–g0šî%×xV‹a£%ŠÕÙö†«ò«ò«r‡•ôD?NÙGŸÆ˜r>VDÜu‡© w”
+Û«¤"©£æ1Ì¸7ÓQ*î¬®=Dx‡'¨R¦§ñ^ÜK†=Àì!š’Oö=]½gº”ÌJÆ¥¤Ó¹4šhG´LÉï÷yt}†Q®£ÏÒçğ©Ó*zTùæ€:!Ï¡J€Ê^{ k£Xk!×›äÑè F‡Æh>¹4zÌiTLyª»s›²òíüûÖl VŞxÜ6]oÚn¯©õº¼å§—9¾ÈÏğÅ
+¸½UéÒd“çt»à-/€ü l 
+”¦†Cô+pÄú¼ë	G¬g1¯Éÿ¨  OUíšZåu iUŞ‚4½ê0UôV×ŒÒ	hFÕôÂäñÌ´ä§QÚóÁ}zmĞ`5Mƒ_fR;NTÿœIk•V«ln)­¤´ZÒjAJ«)­8ZIOPW˜¡ß‚,ıàç(=éÁvMMÕ£4İsâ!š•”•«Ñl5zŠ<‡iN¯Ìğ(t|iÍJ•]4‹º©šÖ+l5£
+—y³$Æ¿@_t¢à"Ì‰¬ûªÒÉ	:¥#¯©&A§¥¹.¯Ë3/A§UU{‹§cT	kÎOL¼	ÂB‚j¤©mš]NÏÜK5‡©®÷0Õ# Îğœ™ 8ì,ÏÙèÌNĞ9…è$hÑ(->²—–6¸&§n@Çft§ÑŞ)’,=òTpÓE‘lõ› ¢^ z#V.¤©tœúN$ÕÍ0À»ŸLj -¾>¸¿{‡°{ 	wY(‚±ìû}F‰Ó"üiåÒ})ì£gè+à®˜ÏÒWaD7ú5¸9_nx“F4ú:7k´d1}Céü|“s ÜCùv(@ßsÔ´¡J@{^:ÛÙŞ›úáTÆÈ²o)Q¤÷múv¦™åÉ7l6³üPKş»À2îä†ÇÍ…‡iL¿¼Œ›G©¥Ó[·7¸g‹£4q¹WKĞŠ¤Ã[“•âôó
+Ê+éq½A—Ñª…î¢EÅE‹J¼^=Am½‹òî¥‹Òê­¹‹JÓ’^Oû(u©(^´Ë\T\Q¢>K*J¦QçpÑî{ÈÀ’{×î=4SÍY‹JÀnF5æ*ŠÑºBªõêùÓ‹tÁŞ±»±äñt%Èï-xŠtoA‚ºkŸ¢Mµ	êÙKİš0L‚kà#åyGPi£Ô{¤aJî59Ğ;åˆäéRXõ5D>ù$Xû5>Y}Ú ÜƒüB€UÀS@Û@µƒæĞ¥Èà—„—#ú¯ Fº™ó*äš«©× Æî,¯#‹®$oÀ®AuÚ›QÍß"t@w+rÈm æà¿‡~ˆ<ôd—‡^E&z7€7èNH²‡«èn®§óÙô^L÷òRºŸÏC¾İ	¤HîúÎÔÀ9Nß§ç±å€p$	áôİ µE[ézc„^	ôø
+dø10öÕ#8~"’—%‰ƒHôlDæqı”~Fù½ÜH?§_ÀB¥¼@Q¡
+ç¨x¬J4*Óh£F/iô²FÇ4zá¤*VŒØ…pC(LFÅŠêÔŠ1¯å¤Ãh:f-’³Ä­G ¿:†ÂP–‹Àù4cPò­xdÄ£.¿pòüe°³ÔÚÃ´±wMŒæBü\„Ÿwâg3~Ş5JæşvI¾jIy*Ğ}Èg[²şÃ˜ÙG§àRó	çºp
+´~Š~­èkU¶²S!±©awüzÁÉCûàÉoMUàÑßY‹l÷ˆÇª†L	ØC†
+ˆADg(I‰ŸÚQºØ$‡tš£JæçÀëQ˜÷ $A)&Ô)zW ÃwÄ¦TkJ¥±&ú ’‡İ‹é[œŒ
+cıƒŠáÙi){.ÑëÀ ²'ëÊÍ0ÛÖ;j<Ã	
+yÂùŸ§‘½»³Æ‘qÔ…qo¾'æÇdƒ«–±OĞ¶†¹ã`1Ş›_íÙ  Øv”vîÇÎKeç{²wz]œ‹Ú®fËìu\ê.€ó»úWàÓ¶Q,CĞXğg rÔ*K Ú¨]°ÅBç
+ÏUHáb¯a ø=ı'ÔÑ©ôGô\˜™A¢?ÃƒC°±=wJş_è¯èu!Ñüz‚‘›S¶¾YÙUª×.úı7dWSŞØç+#€ş.1pÉĞãJMiRÁ4UYşAo:H~#qf‹º£\®î(°D‡^‘vÖ<E'!è 5oAJû•µ6‚öoWíOaÈ¾4¿€Tõ"ğô#¤Ô“$‘4vZRú´8Õx
+ÿT—ş9HRc)ì¿IMöm¹ˆ˜Ì”;wÉÛ•¨W'EmWÃk²¹6¥ˆîJ\j|]j\ Æ×§Æ…Êt,Lõ÷
+ı4/àæï-ôø{5o¡¿W¯ö÷–Ö ÑjıéÆı©K€M/A»—Ñ?¼‚(z¥ã—¸¥ü*ã’z»c‘)t-ç)Ï¡88b‘Z`—²È¹´Ô%µƒVr!z8g!Üz(uáÌEô>|ª÷Š‰Ëtx¤ÈqãÌ2$7¬zöıPK     A yL¢¡   Ê   1   org/gradle/wrapper/DownloadProgressListener.classuÁ
+‚@Eï+ÓjDËöEĞ@Û–EERûI¦ˆ#3cş[‹> Š4Úv‡»9œ×ûñ°ÂÀƒç¡O˜Äª.r%ãĞJ[™ÍM	Ç„ñ,Èä]Š‚­8ŸökßŸ_ÃPU:â]š3aºı©G­ÍÆ©±\°^¶&a¡t"-ãœE­eY²ÿÂè›Ë›¼8\3¬K tĞBNûĞkØûPK     A ì„,y  †  -   org/gradle/wrapper/GradleUserHomeLookup.classSÛNÛ@=$vŒÔ”K
+J)$´ÄÚÒE¢`@"\”@¤<E&Yƒ±#Ç¡¢_Õ‹¨H}ìC¿©ª:ë„K äaföäìÌ9ëİ?ÿ~ş0ƒQŒIx&c\Áâ
+B˜”ñ\¬_DĞ‚)	I
+Ædè"¿”1-òŒ„Y†şeceq7µ“_M/.§ŒünÆHç×¶6-u`›ºm:%=ã{–SúÀ0t›—ßNomé\~İÈ1t,¹NÅ7?kÚUNıïğÍl·Ë_`h'²mKn‘6t¥,‡oVö¸·cîÙ\èp¦5=K¬ë`›¿oU)×+é%Ï,Ú\ÿì™å2÷ôÕ`¹[áŞš{ÄS®{X-“ôÎRÎ'j-W_±lNœŒo7Ìr0FÂ+y¾`×…*·ê¸à2ÄšIŠ~*zÑÇ0qOi$¤ÆJV	OîÓ^«xƒ9õ¦@Ñø-ÑoŸ©Šw˜Sñ Cßíö©jÙEî1D®Ú«x2+ëÉÚ`óøH}¯·níğ‚ß Õº5B'Ÿ1´—¸¿í¹dĞ?aß½8‰fw©§‘nB˜Úqç˜
+qhN‘aê^-ëN…3ß½”û0Şd6ĞÃˆÒjELU1tS&>Õ-Şsc-ÂÄg¥ØOˆN™QM}(1Šá ìÁ#Šj€R`ë›¿Í€i­õm¹õßP/ÊQ«ğWM:‡Ü‰â;"¢¬+)	Q¤g<Dº‡)`£Wƒ%L&|Ã[ş¢[Âˆ™¬_š˜%Õâ7p%w†vM%9§èĞ:)œ¢ë"Â»a­—âh`÷éPK     A úâæª   Û   "   org/gradle/wrapper/IDownload.classEÁ
+Â0†ÿÌéæ¼
+^õbÁë®*AÑ{İÊØ(í¨Óùl| JìTf $_òçÏóu X ï¡ë! ø‰®”Ô<!L¦›œ_9S¢d‡]~)ÓlIÎ„`u‹EQfZ=ô,ïõÅÄ¢ŞÑòg5¯	cmR–HÁ*Ã‹BÖhÃ½ä*eÛS.â’0úšOÁAäZp-·-ÕµcÓ³½ÿPK     A ˜:‡C  ¬  "   org/gradle/wrapper/Install$1.class•VéWWÿÆ§"¸W*´†\Z©K‹ m€`k;Iad2“ÎLDÛªİ÷½vá´Ÿû¥_ìBàÔsÚ/~êŸÔÓöôŞ™Œ!‡ûŞ½ïî÷¾ûæ¯ÿ~ÿÀ>ÌÖc7ccpŠÁiƒZ1¤bXƒŠ3*F4Ôcˆ‘³¼;W‡8¯ç™2Ê`ŒÁ8ƒNbBC/&\¬Çóxw—4¼ˆ—˜Eg–„†$R$.3šæƒ)††]¸¢‘Ó*L–‚†«ºÙfÚIİœ4²'S*X7xE¿ªG;Êøak˜'e¸Ş€á(h*b‘Èy†m:æ¢%½èè¹	m`¶¤m]6Ò9Gg>íƒ¶“¦=eÊèŒ£g³Ò‰k)+É×zS†ÛÖ­`{%¡˜åzºi2ßÃ2¼c
+œğJŒå1UÂŠ®?´íc
+BıvŠR¶~Ğ°äp.“Îy=ÁIläœéÁxâ˜ˆ˜e‘2Sw]IèÎünë¡C¤‰RÜn_^alıS2IUµ}İK”d¼¨»”•”iİ™–NĞkãœÒ³×µ×’2Ëq»*²
+61u+=“¸"“é¨iK÷r‰ôİÏP¨kÌ(µF2ç8Òò¢ıä[9RŞ1ö)nçœ¤|*ÆÖÅl”ôVÒ´]ÃJIoÊN©xYÀ+ĞNÇğ¸Àa´D°W ©)µ"Ã“
+¶,¹§Æ¶ÒÇs†™’ÀUÌ\ÃuÕ]ö´À+ŒwáU×pCà&ƒ[L{o¼‰·ŞÆ;*Şxï|€U|$ğ1>ø”¹?Ãç*¾ø_©¸-ğ5Kƒo¾Ã[—\9—³<##SÏ†IËìñö•š†šeyîìX1ù
+ö<d«ĞXR¾è9ş`y*dÒ‘º'hn(è­xU+_²å-_æ{·6-½ZC%|XÏÈå“Çë¶R
+:Ã÷ß/Q(?	Öyv@RĞ®47Ê‘kk—æ$eÜv®ûîN’uÃü\O~ö%\ÛÌyrD÷¦(1z2)]štİ4ëÒ«aåa¬â²Ìö°Ù•Ì–Kr4EÙ},[¹–•e—×²¤Iã×]Of(_Ò¡7fÓ"çEæQ|RÏ”x½Ÿ-]µåò–hª`ƒ:)Ë˜Iı¼©R§PkSÒ”\òæ {³úçgñÁ)?[Íó³­ó€=c™¶N­®ºúe9êôÄ„ËM¶/­E)N×Ë³ûâı±X±ó‹‘äH;W©Wƒ«?,g˜„úi…‚6Ô44ğ”hİSXiVû+k¥QNTÕôß…(IuÓî<ªPKkKdï”HÇª"s¨4‡æŠ4×Ì¡&2ÚŸ‰§
+=kIô-´àf¢‘,öã àïØ†B?š«tF”K¨ñmŞ»u"òªò¨»‹ú‰yh¶&Ñ¸–@ëæéù'ju³8´7³è!‚ÂÄà qMCØ8‹:Z6İù›iİ’Ç#Äß<^à®¢ÿPAªf[K”„°-íKzZøu-`éØ98Ö<îë¿‹]l`-úùã,Ãz‚1Êñ)új<AúÅ1„Ag‘¦ÌŞÄncßõGLà'LâW\Ä.ùÙ‹ DRÛp‡ı<Ş+ä1Œp„j¨twáô(Ñ7¢ú_\P¡ªèıëşÁmÈO7ôQÖŸ	²î×—ëTÉãÑ;‹'†‚ÑE5û|şãè÷×œğÏNâY ]#Ñv#øë%êSĞşPK     A [e'uz    -   org/gradle/wrapper/Install$InstallCheck.class•”İOÓPÆŸ³u++àüÆ/”)c 1D1F£	èf	Ş•Ãèè:l;ñ?ò†M$M¼ôÂ?ÊøÓÂÆaË²÷œ·=Ïï}ŞÓşı÷ó7€2–¤Q”a&CaV†‡2ÓQ’ã¼Ê:ŒšÏ·\ñªÙ#kuş‘[NÓzé¸â	]ØæÛòÅº^£¹h…Ë½šµúW£Uz¼ŠÁ|í!wİÕaïªÔşªËƒ@+…Óêéµ¦_³"Ö¾Ï÷ö„oÅ”|'êh«Í-*2ºæxâM«Qş;^u•«¦Íİ
+÷™ÇõÆ‘i=hÙ6%Ë…“R=ıÔñœğÃd¤GS2î8Tq
+†T„ïl;b‹!Y˜~Ïİ¹½»Î÷â¦®:ÉÏ—J³…¾á’•øTjÊ°<  ûh$he`ĞÉt[*uX|¬’fË·…,Ú>^saâ
+®šÁ&²&›¸‰[:¦úôcâ®Ëğˆa¬íìmµ.ìaülŒÚ¢
+&è}ÊĞk—@N: YNÚ¡1C9¹OÊ¡Ñ0~!½ÉŠß¡Qª‹Óò«ãÍÍh.+†!›ìE(²ï!r“Æ„MÊ’4Rù¡âÌ!´âì!’_19*öó‘aFX¨‘ã¸¨™„35“Í&èGO>.ó‚Fy/[üítí3´ä]HvxİïğšÁ·éŸBbø9Âªñ¬˜—"Û©ƒ®E'…»’Câ{˜<%&3İ¬·8û=ÄÉşÄw¼-şÄyâ¬Oov§˜'ö¹ â4ÆÔîÓ‹ ´QÿPK     A J¢\ì  j6      org/gradle/wrapper/Install.class­Z	|TÕÕ?çÍò&“ÈB€aHÈÊ®$ˆB$˜LØn“ä%™%ÎL€h­­KİĞºÔ¶h][K[7hk»u©]´­mmí®İ÷ÚÖİ|ÿsß›%d‚Ø¯şÈ}ïİåÜ³şÏ¹w|î½¯=BD‹µ3¼TÌuÒÔKÓà¥v^«ó©âó’‹×å »QšõÒœ&M“—çf/·ğ/=Ì¥9]çV/ås›,Ú¤óf™³Eç­^*âmB»]ší^úï7µó™:Ÿ%Ï³u>Gç€—fóZwÈ³Sš.›òìöÒ,î‘µ½Êó\¡»Sš4a#:G½TÅ}^ªäó¤‰I×9áá~/ïâİŞãå>ßÃxi	H¶¾Pç{ø"!òÔKµVÿÅ¹ôk¾$—^áK¥¹ÌÃ“îË=|…Ì½ÒÃWåòÕ¼W>®‘æZÜK¯óu:_ï¥áã¾Azn”·¸¼}ÂË7ñ'½áO‰XŸ–=öyøfo‘ÎÏxé3|«tŞæáÛåy‡—ïä»<üYùœ0p·Lü¼‡÷{ùüEÙøK:ßã¥^+÷Êªûdâı~@ç:ôğ—=üıª—Âü 4ƒ^ÊC:’ça/õó×töÒ1ÀCò|Xšnñò£ü˜4{éBş‡Ÿğğ“^ş:?•ÃOó3ÂÏ³ş†<Ÿ“M¾©ó·¼t¥(àJşv.Wów¤y^ç¼t-ìÅßåïÉÛ½2ûû:¿¨ó¼ô	Yp#ÿPVıHxÉËEmW¢ÁÛuş	“Ñ‰'¡P]¯Ù¹S}FÌX](›q&_}ÃÚÕ››6]ßØ¶©µqÍæMZÎŞ¸zÓ:¦Â¦s»Õ¡@¤§º-Fzj™òê¢B/’Øõ›~™Io[·úìÅË–ã­µDÚ˜¸Ñpq0¹CÑ3Æ4½)ë©î‰ºBfõîX ¯ÏŒU7©AõtEwGBÑ@Ó¬lëíqa¡/è]şÃ!¡<7Û‚™s°hš¹§3Ôî2×CæêÎN3oDŠ·“2)#	3	„ª»1±:íÜ	É«Æ]âî•ÁH0±Šé¬Ò£Hyt¹Ş_ˆ[˜œuÑ.“ibS0b¶ô‡;ÌØ¦ ÅXÑÎ@hK ”o»Ó™èÂÈ3²îl¹¸÷vÆÌ@Â¬ÆL+²J°ÕzÂöİÁşX ŒFjXşŒV‹NÄ0™ãL™$êÂö±`G¿|o…˜&Xä#f¢zsk#¦„DÄúŒy:ÿİMGv3-}_mÎ³
+;èÂD}0–Ú<-›¡6ßì“oèş`öÉ2è· ÛLtöæ`Kéh
+£…9bì˜5È‹˜fW¼>.¼¦YÑÄö¡êóƒ}Õ`5Å#ø/ÎÔo[o ñÚÖ†ëvÀèè1ã‚	ym‰@çÎæ@Ÿò"¦óÏ@c„Ì rÚ±{ÍhÑdÃo"Ü—Ò´ÎÙ%A:5µrMw·3»ZÕˆ—A%Sh£k”³ü¤û#P²=Óì¬6J±¶%E]2	Oé2CfÂTt6EûšÌ]&|)&¾P:–Š£K\ÊHŒš˜Ÿa¯&°	ª“GÇğ@_2ıGÌ]9zUµ:ÿRç_A¼îh¬Ó\+–O¼¤
+c•So
+ÄzÌ„¥íü„îK:—ÕUˆ)ı! D†Áç)f6;2âÀİ¡ŒÅ¤íXMôš{Ğ4u+âZ®7ÓZ7;ûcÁÄ@u3ÀÈZì1•^İ‚b¶ˆôõ'°‹Kêè x¦·vGfÃÑšş`HüEç_ëüŠN†Æw™±`÷@¦W·F£	åĞYt—)^Vp³Au^fÎUî’±A½ïŒû,˜pv)gğZtÖEÃfš)Û
+ŠH\”¾¬t,ïË&ÌœöÃ-ªæš{úÌÎ„Ù¥Ì˜èLôBê][j‡FC‚1v;gz­K,‰©wŒª³´{"Dd¾­1^˜›‰†=ğ‹„ÂF3Æãèjâîx¢+ÚŸH9‡¢µ6	…Î%&÷u Á2´³1•t	ødSÑØ	µ©àS½RÄúû ¿L8È³ÌW‡8´IÑ˜íÆ:¿
+=ã[ƒ9`ÚQº ˜íÆ[bîKTÚƒ˜¨ÇûU¹»tö‚İ˜	¿)Ú1ÖÔ:ûapxš‘Dl …š£Ò‚Œ¨šáeÅ¸%¦bJ€(ÉÅ†Œ~IBU%‰)t"ıa3•Éj§Ç‚ó“8>e,#vj]œÔÊòñX¼ûÎ¿…ÏuFû2à€©ª4+LdH‚CBåD¨ÖPê·páB¦¬‰-Y;ı/1BÛ³PšEÒ,Ns±T¸ˆ}`.ş…†¶g‰4KÓ¼,^*? /BÆÛ¦ÀÇö3{^•L3Ø ŸôuzÊ ·èmƒàß1Õş?Jq!ñ{ƒî£ûÚO_0è‹ô%ƒî¡{şÿQç?ÉóÏÿ…ÿjğßø¯¨šb EBîïÿƒÿ	Î33ø5ş eüÅÿ›§ô*ıÆ —!%ÿ‡ÿeĞèĞKôc,¿X3èúnr†ò¦ÖşH"6S3Lãä6äÒdÚ0»ü™YÇ/*ôü:¿!Í›r0îDı»¡`—\¨)U¿%¬>ÀoüH©WÅUŞ7ø]~ÏàèN#5EcPÉ^”¡lÈT˜Õ‰%bğ4ÍĞ  9ÅàEYj7¤ïºh¨ü%üªğô÷â½~”7~]sš[ÓÙUºæ1´~`†-âÑHßĞ¼ ÍsEËEYª7Ô8iÒ
+,±$WuúQhÈÅnæÚ˜P›¨åƒP½`4ôÆ>£±ÌœÁ3´U}XÂĞ
+x¬›Ô¾LÕµBx Vdh“„P±Ì–³r¥(S›¬MIÚÑVR^ÚTÍghÓ´é†6C›©k³m¶Fçhsa>í8C›'ûsªò¾Ñ–_ŸïïŠšq%"Îd‰@0âDRÌÁ«üv! Rw#7ùÍ=¨BşEi!« ­´y6tœ‹nC+Ñ7´ùZ©¡-Ğæ29.öŞqlõ‡ÿ;­L+×µ
+C«ÔÀÎú÷—X1¢)ÙıYVrµ¶Ğ ßÓm‘¶˜¹w‹^ÁN…şhw¶U~ë¼4§$Ri²eÀ_w™şÓŒøpŸD†w0Ñ[UQPû½Ó??ëÙl¾¿/ÅÂÄ€"È^ÖTÚXSeC—Vt#;£1Q¬İ%KüXËğIÙÎ^îïEÃPM"Ö#XEb•æÏ,ˆı¨kü%ñ’HÒ¹ırN‘!«;eÆN»R­QÿjU^Ğµ%†¶T[fhËµ’aªÀpu,bĞĞN” Y¡-6Ø'®îíFl°EU3^%7Ê_“GWgo8Š²ÌqÂ2lYcaW­¡­ÔN2´UâÂ¾,5ƒYÚÉÚ)2õ(>S5&`Ct AóÍ¬£—ŠºVghõZƒ¡­ä+Kê\x²Ğõ÷¥+]Á¼vz4^AÁ¨k§Ú:­Q×ÖÚiZ“¡5k-Şm•—†¶AÛhh§k­(Š³V\—jm†¶IÔ»YÀmrö2K×¶ÚV­ÑĞ¶‰şg	ôF•ŒS3‘,sHt×.ZÜnğ"^lh;´éLó±0Bm– Aá¹øƒßì$³·]eß=[4*9mêEw[çñ	£.Éd§:R¿FåÆó(§ÚÌÜ”Y¾ŒqìQfÌ(™&e«iÕñe—«´±Qñq´­‹üÒGŞ¬ùßO§Lg{Áÿêò­ğNÕ(Ålú&Î‹y©Û¡^S'ÊØ°d«³Ş(K!õÀî8«%ªëÀŠøÍ¨K+—Ê÷±3.Y&•f½Vqã–ğy‰èê¶ºÆÆ$Î¹…_9Vf¹(K*}ø5ßæìhó=‰hrÏâl[AG:Ä›«‹Åx4´ËL_ea+í‹yj¡(ÎRYåãŞÿN¥gÙ÷ƒÒë‘[Ä&uàêEãxNÏbòôµªt››cA`zégGrì÷Ê_”ÑËe›“·+‘«; ’ş„iiÈLaÆäÒÌ[‘$–ÈÉõo‹¹ÀáŒ¨ÇhçH¹“ÛºMçd“–ovéÑŠÊËÍ=âBw’x6E™rÁ»
+®H'¶X4¾=Ç½ËsŠ!v¬Y $v÷÷u„]b¹»l„t–.;ÃH”œªÔš›ˆ®K_õ—6fœç{DÁ€Dì5£´îhN­ãá¾Ä€Ü‰«ì®~CvÇ±„JmúĞ¼\Í'eÕÔ±_8ãÁó¡$Ô?FÜ”é³eµ5ÑhØèkFÜ–ÀIEÔ7Qªí¦@…Yl} –vò#îæ2P×çgÅ˜ÙÇ.ŠÛ<%aüäHjrû¨tW…Ğm]øå˜b;ß–f¹ˆÌ‘kËµÖed|çHrƒñúä±ºtÁó¡Ñº@$AÕ²¢qri–»5•Rã¢?a<Sıé‹B}w ˜X+Q<A…IFN’‘ÆFß^OÍ~_%û­ü@Ş7æê3£Fé¢¢.ÏNIÉïÑbõŠ"ƒÉÚut9=€sBØöÑ„éøcÊ5)~,ƒIú—kÙÍm©Ÿ™3jU€7Ew#ùª“{dÎÉº‡'yâ¼gòU×ˆµÁñLà–r2gHùQqÊMFÓñò¯Ñ÷›ÄÍÑ˜Ù2ÃĞ%¶ÊD¶?‘LÇ½ÀÿÚÃ¹0Xñ ÁhH¦‘!+Ë¹Ã;­ß|iÏsiY©Qw£ãù™k7àØ¤9TLíD¤“n§;ˆéN|it¾?›ñ]ŠïÏÑİ©ïÏS¡Ü¨á½P.ÕÔóºW=ï£ûñ,ÂÜè Úƒøú¹È‰ç¼²!r–“«½Ğ]@Ï‘ş yÊÊ¤œ²ŠÉ[Vù åT;|í4r£]•'Ğ$ªµ4‹VÒqt}#eMú*=H¤Ş„'VoÂ•¦Ş„/zi=BıNÊQ”—•’Ñ\öUÊÅK^Kå M¨q¢XãB§Çç¦üö2ŸËç¬(¢‚A*|ŒŠ¤Ø›¡ˆNA»†&PX¬Ëkk«¬R¬-£CtL¸h!}†AaÍ§‡èQ°6	fxŒ‡0Óh:=7=‰5NÌ_‚™_§§,Æù‹èËÁÈ>ç Mªq9–»İËu0?yyŠİûHwî'§c¹§Ø³*-¯¢)e•C4µLƒä+÷¹†hZY9:§cõ~ª¯ñëî;©Àçz†Ìƒ¤3k\ÎåîKõ‘bıV:n˜fµÓìö!òÎ¤¹Øî¸Âyx¤’!:şÑb÷Í#¯y´N£H´Ó
+¹ˆºàZ&y©£AòÓ¹TB;©œ"ĞCL1j 8Ö]ˆ•	j¦~ÚF»(@{°r€zè|
+Ñ´—>L×ÓEJ³İ æ‡C>MÏ+N¦géxƒVRÚ¾Ai‘Õ›¥my;Ô›ØÂ	Î®¦çàä.P¼‚¾	znpy}®Ó·•ëyŞ£<"Ì¹Sø2x„f“G§bŠtújŸWˆušñÌx™iÀè»VğCØL8,×Ri«.7ú,,µ”:HjœÃTÔ^1Heö¼–gL¢
+ø¨x&,<L•0PU»˜¶zˆÖ¸}îAZT£Ëc±O?Pã±Ş<Ö8áØ9Ik.±ÊC´Lº<¹÷	™3ND¯¸ÎŠÔ(€XgÁ¦aˆ¦¨zº`×İ5ŒV–ÔÀÇ‰.Áèeğğ!:® &º
+«÷bıµX³+®…İ?U×ÁŞ×Ó-°ÎaºQYºVC[”X½„¾§bã, Á÷éEXk ‘÷,ı@ÁÀpÊúÃv¬É›ø†5ƒôC|9”UO mëÊŠÏ'iÙ²RÌø£É™9,½bÉ—èÇ6†<b²í6e5ûéô–LÅ­´å$±Ù*4öûøj†œœ¬|ô ÀFjmuÎ‚SíCßmè½N{HŸ¡Ít+mz'Ñ‹ x–~¢\}[J)ÛR!±M‚¦T‘CZ£NµocIÒak1ô2ıÔîoŒ Üú2àÂ)Í‡i5SKåaB%¾–ã¥A¯h´cÕÛnsRZZñÔ†­ûG9¨öIÃû]h?;‘|7ĞóóÔO
+3xñ3…à!%Ìz%’#¼âçôpüKô©_ÙâM í]‰ß_ëôÊ[J²Wé7¶_´SR‡DZy:ÒÊíH[›Š4I§nÍ”oXÔ
+œ”1½PF£C¯—ËšJ´§m•İ,ÎU8õ%<ïúß^ï§H“[(w`F r§[GJŞú­m¼Ïæ"ïüNá™Èé!`Ó¸jìxä&ÛÎ·)´#º¦°é57SK;ñ†fÇª‚|zÈSãœ©İN¾
+1ÙÆU3oy­ÜçtÌ¤Ó÷üÛºŸŒ—¼ø\B¤¶[5È5®bWå#wQuT»–|øm² h³óÊõ9óÒ–­>§tÍİz©‹÷¼ • sÁh‚Š•êi©iªBÈº‘±'"” ôTˆ=	s=ğë@ ?‰UO@O"ı>…4ò4ßÿïER8ğ> ş(ú.GÄŠjÏ€Ï@}„³9@u:ı‰şõôTş‚dà¦M ıWŒŠÛ_Cƒ’%/§¿Ó? Ø‰HEÿ¤×Àû:¤®a­{®¤Ó@EŒ±ˆôv)äx]§7€oşM[hABÉÇ·N³a²yÈo"çd&‹·èm;öFÀ‚0Ñ­bO‚n«İ¤ÂmÎ‡©½İQÑvˆ¶¢0rjØÛ1tæ‘CÃt–fE¨ÏyˆÎ~“Î9b’¤âòx•¢¾¡_„¸?@¶ı<ò%ÄÏËt*a"òD¨s©ÅaÊS»íÈ”·w NTÎ¡w1Ûµ³é=Ëéh•±_Ù^<‘ïÑ:Mi¦‹G˜ìpı6¸¨«|†œ|(ÕÄ:÷É·D[a—®ä*okw
+Ş¶µ»*ÛÚİ>§ÈYã’:FRäñ¦­`Iô
+8zäG¹ˆ™Iˆšb˜uÜa>ŒºÏôzFUW—’¶iÿ%mi¤OCŸ´NdŞœXíe§ª3lÈu½CaùL³ËÏŒv°b‚‚‰VA’›I?Dæ¼v7W<c}S‚¯·¥BLúÈr©‹İÅ®»hÏYì^Œ¼¯Rp•>ı0«ÑÖKİˆºŸW¦M\ö¦ÃH¹0J>œmä˜
+–ı`v» ônZ÷à(iêˆ‰]¥ç¤Zm£ç#+èìÿ~Zl=ij«'iêrå¢šÒ9g'İ®§8G šs Ušõ¹X¬£q.şŒdFÒ¬¤Hô$l§Ø^áwa@İÌ ¦p»ûaŠ´;
+£pƒÂ>8|á¼¶!Š‰º)^ãò¹)±ÖZ…S»|ï¢İªv¦=Ğî€U=-j¯ñ<MS|záùVÌø<mƒtòØ«¢äµì§Ù“ñZPƒ@úğ ]$i©|šü™Yã£é:ÀÊ!M1Š£+Zò¼e°å˜Ûq¸ Î#'‡ó©ˆ¨˜‹h	ãÄÅĞód€Á:‡}´“§ÑE<ƒ.ããè
+EWñlºï7²Ÿnâ9tÏ¥;yİÍ%ôÏW¶ìƒÕ·RvxQa	Oà‰°j/ÍÄnwÀÿ–P+p!ü¥†Nã"ìëBéæV•…“n‚MŸ’¦LùÁ“*¼‘{ ü=®¤»\Şa[½<ì›ªŸñ/¢SXç©¨¼tıpÇYèäsfN"Zƒ2e½Næùá>ˆlaäiØD¢®¨ğâCtÉ—éÒAº¬©¼ğcƒt¹œF­ƒšW¦pª÷r%ıdk‰Í·-OWa¬ÉOø6áÇ «@[m¹Š¥Åx\Ñ\ñ4-p¬šY|7§Lù]ÅÌÅp<”6ËÅÎ›Éå¸÷Rbí’şïMáŒBT®ÆFÁÄ"ÊçÅµ%´€—ÂËh!¾—óÊT˜-ÀÌYHZNÇ<•Œ`³ŒgÃ¤ÂzmJåµª:b¥Ş<r¼K…:Ïá™o‚ˆ&ÿÓƒ)«CÑŞaº²Ùä*©i®Ï=L{%©˜òv”r×
+Râì!AññCt5Üòq=EbâxÿsÃt#Bçí>÷İ4DŸ¬ÑË*eÒ§|ú}Zbcß~ÊÃÁCŞpğØ?ò)ìx³9òâËA…ë„Ÿw‹qñ×§98ì]ŒçÅt©z:ÓGI>…rxMäzòq<öTFÖÑÉÜH¼Öq3mçÔÍ§#"Zq";úñÜÃmtoF„l¡‹ñ¼Ï«ykê€QBm|¢Ã…jb5"äqØ};Íâã):RRˆKyòó½)¥ï…/YIn/<Jü<‡.á
+®ÌÀ;ke•]¬&ı]Áü+u®~—NÔéZøõ6Ï´FÄOäòå¼Eš*2ësùáÔN‹·¢OÜ´¤À‰B®¥ºİØ¾ÜyM¨¨t†nÙ?ò8c+€g_ºU¥7o'7ŸI|Íà p¿ƒæqgFZ/II\g}MI\ÂK¡Ië³Uåä@‘=.|·-©AÚ;äF…ƒ£0§™Î÷ğr>Á­¬’Ó‰®ÎNôŠ[m±P±à·¦ğ‰6:¯°•®sT Y‹˜±ôp†]+yA²RÎÚÁ¬T-Á¼)ªŞU/¨Z7^>É¾)ğò*uSJÔØód8¢%F=n©Ï8û~Ô¸Sû¹íı4^­rÛæÄäŠaM/’¨õßÃÜ‚27çÿ PK     A I¦ìˆq  4     org/gradle/wrapper/Logger.class…“kOÓ`ÇÿÏ.Ô1Æd8@AÑ­
+C¼Í˜˜%$Kæ%™	ïuOJ±kG×iü*~
+5Š‰/ü ~(ãyº:&£!MOŸË9ÿß¹¤¿ÿüü ŠZ	ÜMàî%PB9	iîK³%Í¶MÁ‚]†øéĞ;b˜yfÚ¦÷œ!V:*·éSwº‚!Ó4mñjØë÷w,:Yh::·ÚÜ5å>8ŒyÇæ€¡Øt\C3\Şµ„öÁåı¾pµ¦cÂ­1D-Ç`È—š'ü=×,nZËsMÛ¨I Òƒ7|Â”CºåqıİKŞˆ3RÜî2ìLêÕ¹Û§Caë¢V¸xá{ËP™ˆ>8e(„Å1TC5PÕøÀã®ìfƒ~jË¥z¨7Óé­3$[ÎĞÕÅ)‹šõj[Æ¤F5…Y¤ì¥ğ û
+¦ğù–ñXš'Ò<%Nh×æÏù¯;'B§/K‰r.É1Lø·><Ñ£gHQùQ%¦£½¡‘x4Á{THî’cšf_î,›A»j>SŠ»Ww*¦0nõ…+¬Óß 5šŞÙNúSâ´Ncl†vˆĞ$Õ`jñ;"_hÁ<Ù9DÉ^GK¤R@ÖßùŞ¤–ü•T¥qbù@ó0ĞÌ¨ßù„äWD+gˆIáè„p
+Vh½6!œgèd‰~“ù.ãF@h„ìˆ0;"ÄßªŸ/06ˆq›B6'Ù1#K9¬œ32>c5`XTwŒ¾¹#-+«g˜™¦¨D©Ú–OQGacJ. ÈÕnú9äp‹VÑä¬O^¯®xeš[%î…ì‡T·AµÿWİ¶›PK     A é`˜  ï  8   org/gradle/wrapper/PathAssembler$LocalDistribution.class•QÛJÃ@=›¤­ÑÖx¿+øP«ßAA(*(‚¾mÛ¥İ“ºMÕÏRPü ?Jœİ±*ˆ/3sfæÌœÙ}{y°ù,RÏÀÁ„6“.¦]Ì0¸UÙJ.d“a°Ôà7<q°/C±Ù-íIÅŞ’‘L¶æ½M½hùŒÁÙ«‚!W’‘8l_•…:åå2~)®ğğŒ+©q7é$uÙb2µ=Z§d¹È8bğ¢H¨İ·Z‚Z6J±ª5Å«¡no6…
+yRß¡úSK?†Ğ~M$_Sæœ|aùû­Yê£WĞˆÀIÜVÑ~Ï’5ÍóÁ¬‡>¸Òp]Ì1¬ÿ_	1*BÕ‚£rCT» _qá¯iX¤OLÑÏZğµŠ|-ˆ¼Fú²dû	S‡M>W|+®<Á*®>Á~0TÏĞ²u²’hâ”YèĞ&Òã™‰ôB‹bÃİ5y]KaİO›äµèuºF~%ÛßÉw¿-Œ;†<y}ªƒ)Ò•ù PK     A W©Çº  @  &   org/gradle/wrapper/PathAssembler.class•Vé_×=ƒ–bX"c;`°eì!	»qÛÇÄÈAà²¥ØIğHÄØÒŒ2‹»§u·tMÚ¤M›6İ›î¤%'´ñ÷şMm~½wf€ˆ&ùòæ¾7w9÷¼ûî{ÿ~÷íw œÁı0Nc­q”xXCÅõ0I7x(óP¡ñ²Î“ªˆgÃèÀ¯,™!XüµÃá&/ßâaCÄí0zñ™0>‹Ï…ñy|í¿Â—Âx_ã¾ÂÒ_åï×ÂÄ×yø†ˆoŠx>„o…1„o‡ğVş.ßcGßgé/†ğÂK!¼ÂXÿÇ"^ğÀŒ^Ë“ªijŞ¶T] e5M12eÙ4SÀá‹ó“3S«KSó«Ós¹©Õ…ÅùììE‘™ëòM9U–µRjh¥q]3-Y³–å²­èº<?wi*³Ø°ê*r±¬,™Š1­WXÃu£ê©ÇÕ²B.zª†~])X“ªA£nÜ<¯jªuAÀ±Øníİ³‘eşŒ^$¯İ3ª¦ÌÚ•¼b,Êù²Âp9×eÙPyî-ú­u•’šÑRÊE–ºeÈÕªb¤.ËÖú‘P!Mƒpu—k7U«±VvOº_"bM-Ù†Ìºã#ïáä{ö‚é,ìô" ¥›–„ò²©ÌÊÌq¨Hn]±ÃĞu¦Ö‰üƒftE­
+˜‹½wc?D-ŠB´ò´l®“DºÒ©QZwVÓ”KÊ¤ZRLKÀ «d*ÛP­Û©ÜÎß¤Èß¶¸pÛ®¦”ãÁ^§6
+JÕã'h:!(Â‚%nääªWİ†RÑo*S–¢™í~ÍaK v„,qèU‚Ëá—‰¦X©¥ùì>0½KF¹QïÛÚä¼Je â'Âä7M›ælÈĞş5ÏŠŸ÷˜tÛ((¼H…¾«¬ÆØBÂ8~*áxDÂ9<"âU	iüLÂU<%áIÌJ˜Ætöwº—ğs¼&AFºÀ^(i[-CÂ/Xç—ø1“’ğkã7~ËÒïğš€3¾òÙÇy¿—ğ:ş âşÄîr˜àËMñg	Á_%ü›ŞÀßô:+ä8•VKYÍRJŒï¬07Û]ZÔ‚€şæê¼­YjEÙñs £ÛåbTÓ­è:•nTÕª¶u‹gŒ}×(wê¸'á-¼-a‹Á¾Åá¢ï—;µ»½VÂ?ñ/ª¯sR¡rMœ‹RİEU3jk74ı–CÑ;dİD>—ç®¹kiÁ«p_Œ[ãğ<Ää"6²·Jìé~i§ğzc-«}¯2§Lyp(­(`ô}¯Ä¸“Yúv&'Z^ »-»‰z™‹Ñ›¸´à`’è,ë2MyMY2TG[ê&ÒÎ9õKŸXÈd³Û8üŸ&å6¬sOàéıéØ·Ë…¸U¸ÎáV´«EÙ"wØÕ4“,zÑ‚±¬»r0–m¹]ñV¿¹²¸nè·¸5:ÜvĞË€À•¹5vÙ;ñÑnÚùíşz(–m—o¯4”gm¹lîñçVôøÈ•}â,ã8=–NÓÍ><Œ³ğ1šµ!Aóï˜"Âİä7@úŠôšÒl…t|ôí×!ÄwÑOŞ…ïÇø‚cæ§ñ(ÇĞ(º(ô'i%êšá1L ÄaGâ@m$§‘ñÂ¼‹ îÄ5øëäâÉ:‚³ñÑDâ9ÿB+ü«½ğ:VêhÖYCW¤›†>?5ôÔñÀ¹À¶nd—î]º”l·Ğ»ÒèÖqp³‘[?‚4S^1B=‚ÃDj†(Ü@ÒÉqÚÅÜÈñ&1EµÓ›õq"¹¬l\$ÉG¶Ò?K<eH;KÈ„K$I“®“fÌépœ úïáP‡ëxp¶™‹Ô…ß„¦/ğ=íÀ‹»nğ†(‚#1P†÷ fxm|‡x ^';¶‹ôİC™MR´-®ø	ÔÑ:õœ¬!º™ÛÂĞJäíÕÉûçãô„>Nşšô=Fã=ğÓè¡Ô‡(ò	ŠÍø&
+‚À.Sü¢èS˜'Û$/`ÑÉf¬~Kúe’ƒò"Åiã+ÚC},¹äz‘ÔpêÑWHl&|53G¾åz‰6î	Š2ƒN²o–ko#Z/>íDIcW(’÷?è¤'¿¼¸Ï‘%ûì'b¹$oÍ©ƒ<¹™ô_«a¤ıeÊ1@ùI”aå¡š»Õß@Ğ§ñÅà Vb’èp1Ÿƒ¥ÂqáĞ[Äƒó<¹aâÎ'"(ù
+Bñ7Ñ¶™ˆŒ6f¾MŞ5¯œ"cTFNM¥¶ÃC÷÷ ¾JÁ¢àOÓ=CvÍ|ÈÓ |…Æ†®Nú_tŠSÁGò¤k‘Ò<ƒöÿPK     A „ÍëÂ  |	  0   org/gradle/wrapper/SystemPropertiesHandler.classVİSUÿ]’°!,-ĞÒ‹-á3­ŠTR°–‰ò%A(õ£.a›,„İ¸Ù”âWı~ì“ãL}ğÍÁÇ™ú’2cÇWÿ¤Ú±şî&$¤µ9÷Üs~çÜsçŞ›ıûß?şğ"¾ QÔ ÀŞP0€Oc(xSNŞ’Ú”‚i3
+fh@Ô99¾-Å¼ñ T,Hø;õXÄR=.âŠËr‘¸‚«~¼À{x_Š¤¸&ÑÖcš‚æør|!:}mn~v":»BãÔšvC§53;¶a&#ã–™u4ÓYÔÒ9] ö‚aÎ˜€'Ô³(à·Vi=<e˜úLncE·´•´.“Y	-½¨Ù†œ^'edú§,;NÚÚjZoÚZ&£ÛáøVÖÑ7æl‹ÇĞ³“šI·Í$u§Ò+p2T(×°ÂFZô¦9ÇH‡§µãü†ÉmèÚ†@°339§à"L°°–’?6½™Ğ3a™ôyÖõ-&ÒìdnC7rfWÖô„CÔ¡L©.™†òÒê‹ˆ-V&Ùª,5Ù·³Ö}î½G¤£ŒÓ­Ìc^‡Ê^8ØÈƒ–1ÙÜ¸£%ÖáæQP°ª€Êuº¸‘45'g3ôé\?óz¸•³z¤'t|P†ªx§šöÖ™Ô²)®¥"‰”ÀÑj	´=¡Í2¡bë*Ò2ñ‘*ıhß«z>g:Æ†¾ÏÙV¹¥K9#½ªÛ]QÛ¶ìÎÍ”nv¦-m•¾Î½†v^g-£*6`Ja©Èà#Y­"GANÅlª¸‰”Š-|,Ğûì÷ƒg+[ò*øDÅ§øLÅç¸¥â|©â+|­â|+ĞXyvyÊ) î'ğ1MnÄBÊ¶6‹w{/(æè¶æX,£Ö(~>WÙ¹Ê##IÀ±=×ş›(¾DÚÊÊWFîÙ$v tğ$õ0;©À/èÓğ~Ç*˜x¤BDôV©`ª
+-nıµ|/âº#·¿ÿĞ)ãÚÅøy­eğÇ¤2FIiÙı&Ñ^ÓÊ«,=A•5ò²ñÙ¶ì’áğ¾´Tã‘mªMëfRØµ/}6·’-Æ·„bU	ñ$eñgş‡èRevXà|ø3%Àóò_à¹¡~Šcg5hçOÈW‚ò-a‚£¯÷Äï.¤›²Ö5¢T ô —cúĞOƒÅ_ğ	ü¶‹šå{ğLõæáı¾¾»»ğÑP;½e™™ı3ıyÔñØ†:â•JĞ{3»P—wÑ@ô¡æÃy42ESÍ÷pä~GwĞ"03°ƒV;¸L¥M`Äôæq¬¹=çî ¿4éÈãøˆ/è£öZú‚>×u‚Şœô`iûÑNß]xÈG7Yø ÎºcÃA=·#7?£”ÇáÇ	ÆI4¹lv1ê4ıİ$ Ä¨n¼Ìq˜³R!9K€MÏ-²z›™À9üBÔ¯r‰œäWÊ)´5È"è î,µÛìÊ9z|Œ~…_=/±’ÊÈ!~üLë0›Ä÷8WIşH±-_„Ú÷{ÉÿM
+F1µWÁU>…Ë
+¯=€ÿ’‚ú‡¨SpñL<`¦×İ–_b†qW»üPK     A @_E˜e  Y	  -   org/gradle/wrapper/WrapperConfiguration.class”mSÓ@Ç÷0¶h–
+Êƒ -‰¢àå¡RÀ¡€3èh,’0I*3~&_èŒg|áğC9î&AÊqq|³{¹İÿî/·—üúıã' LÀFâ0+Ã\^E¡æeXˆÀ"-ód–È,Ë°B~•LÌk2k2eXg ”ÇµƒškX&ƒ¶â±öQSMİUw¶
+ÓâñÍÑtø9UÍ¬¨%Œ™>ïæ1H6n•´‰É©Rí”üÉ8ó+ÑÊÏmÃç–}²mœêVÍeÀ
+º?jU£¬¹z¾¡Ğ]Åèƒ–Ã4ÜY7²#»¤E«Œ%Û‹†©oÔNt{[;¨z¸Ö¡VİÕlƒƒMÉ=2#EË®¨[+WuõÜÖÎÎt[}ëûEËü`Tj¶F]ñÛ+º›¿rXñì\íŸ”È^Í!ÖN®”]å®l§#JNf¯çŠJûÇË×ğwÓ\nÃŒÒNh(†ª½‹	ÆœÆ?â"şC#Ü„ql8ã„s="eô*=(Ú»¨Æ;Ğãü#EÊîQ™XÉªÙ‡ú²As¿%î8¤w Á€àBĞ;Ì;~ŠWÇÆ±¯lÍç‹Kû;¥¥­ıÕÍõ%:¡aÒ‚é¸ZaZ/vè£pHB—İdÒ¤íhóÖ¹Yµ´²· G^¸­@:H‘"óŸ7y//ÊæÁ±~èÂ şâø‰@UÄU½‚ç“O¾;ğéÀ#‹ç}Ú~|:Á}†~$÷X®ãF¤\GKdoñÖÑ\"¯ÃÍœTå«Wj mÈh»@ÂÆ1lÇF)lu¡Ä¨â‡»¸¸†{Ac=Åšsß õËß¢-Şfƒ¸ù¯ø>dñ,f7Qvn´­—H1ow5Ã^…”ŸT 5Î"Ôu‰ÉAr0*‘xQÔŒ…€Ğğ¨ñ˜DæAT!È1ˆÌƒ<FÍ“d 2.iãA
+AT1H2š™T òPáAæ„ Ä d5ùî dBåAV„ Å Qd5Åt ò& 7?s ›B)Ò‹_3RBÍvıA¨ñ3x. Qx·B8}ˆÂƒ¼CÍûú…QãOóòPK     A —n0í	  ‰  (   org/gradle/wrapper/WrapperExecutor.class•W	|gÿO²Él†I ’’ê–H6!AÊ¥MB-¹Ìn‚	jœìN’ÍÎvv– ÖZ[©µ*õ®ÔzÕª %‹«µ`½¯zïû¾ÚúŞÌ°™İˆ¿ü2ß÷½÷¾ÿ;¾÷Ş÷ícO=ø€5B©ˆWˆ¸ÓWJ(Â«D¼ZB	HpS^#âµ~¼NÄë%Æ$”áàˆˆ7IXˆ#e$y7ŞÌŸ£¼ñş¼…wß+á­xË½İwğøNæİÇ³wùñnßÃŸ÷úqŒÇ÷1ûı<û€äñ~ş|Èóøş÷ãeÙñì?Nò8Ã”,ÏfE|ÜÙÜS~|‚}:ÍÌ‡øsZÄ	›ğI&?,aŸâ=Ÿ–ğ>#áQœe_ÏIø,ãÙç$|_ğã‹j·‡#ÑpÇ`4Ü×;:8Ğ=Ú?Ğ×ß5èŞ«ìWÚJr¢-bZrb‹€òN=™6•¤9¤$2ª€º<€öH—!ŸÙßİéb.ÉcFv¶®Y·~42Ø#àŠ‘pÿh$Ú7ĞUˆèâÂõvEw÷ì†{ºú£.VíP{wx{{´k´Ğ[RÊĞSªajjZ@íqÆÔmı9:y]1'µCKÛ¶¤¦·ñš$Jczr\›ĞÔ­m†O¨mÓ†’¢}m»í±Ó’ÉŠ©éIÚT5®¤g¯3·k}uã €µùà—Bì: Æ2´À|zœ,[Ø­%ÕŞÌÔ˜jD•1¶5Ğ­Ç”Äbh¼vˆì·£—bGv8€ı–GL%¶¯GI9ûJ·jIÍÜ&`e•Ş¡k Ğ¶jW.uˆ©)'>sR£À7\‹å†ªÄ·kiÓĞ„€ÅM^9Z‘Ğ•x¿ë\ıZ’˜ª2•3„¬'SÓ&oñ%_¦¨älK‹ø
+sB5-}ÚX†©]P™TÍ¶Á0©[DBy'+ ¹ñÿIQµ\¤0íiÜ3ß!/¤0a"áÉëĞu“LVR=
+û­¦jXáSŒ	ŠF•‡2B³!Ô_J!}Ìÿ"yïi
+…ÙÛ©O‘Ï(|ÎaQò¯hœoœç!ËNIìUe£Ç¾ËEŠ«ãJ&q¡£Õx …›Â”ÇaoæHÓ1éÓeÙ0âi„ßPoÌPˆ(ÙÏ†ˆø*e«¡¦tÃìÑÒi›‹’Ñ3FLµKtqA¡´2¼€eÿ»¤Èwwh,·—«œeë\”ñ||T{=ó¾ÎŸÈø§k`ÎßLÒÔ¦Ô\™	hql
+ÎÇÉ˜àÊåé•Á¸NË¤nÕT†­TlsX}cÜÀd|ßbmß¦t™5'#‚¨Œ>ôËxd¨lkqßÁwE|OÆ÷ñ„ŒóøiŒ»@‡’Veü%â&?bµyıŠ9)ãÇ,ñfV»™‘I….¹HfJÆOmŒ[eüŒÅäCZ*BG¢Ú~ÎÜ_ä1là_2ãWÌ¨ 4­û¢O=Cqø5~Ãˆ7Ëø-~GW%¥‘WLÕİÀ¨mÊø=gÁ[dü¤~àÑšé\:õL"nÅÛipÚã˜}Ê:¦VÿŸ¨]ÆUÄ!·ã™ãÎ4Wïå­–ñüUÆß8o˜ñwÿÀ?EüKÆ¿ñ¤Œÿà)OËTg-„"Q(–ŸP" ½WZœÖÌÉà>õ 9é”ÓÆ55Ô’Æ_È±ÖÈ¿òâ4ôiûœ“ísEkQaI¸Úó‚ÌëFÔ“‹ù[j¥wÚZR#)¥ûxJ1½;Š»{Û%àİÖª½:)é*ç~«jÒ´k>w£Í=f6ºêÈ*n-I;©$.TSAJQqíWík &fÏ$¬¾hsœ{ç\¬Ó…·oec¾ûSUpGs5íI-åšš/kS—Èæj—Xé‹²$Ú5¢¥luRÚ½°96¸Ã±•ÄéÍ+f+èº©LÏçøÃìvmò®pb¦/Áô50@èÒ·U.å­ W¾Iù9Á}‚Ñèù¤b‰’XBg×ë.ş  PÄHŞ6ÓJøË}7ÍËZ¯îïõ !»Ò<£g§çsk£¢Õ_úÆ¹¦ÂµV9GS©L°J1ÒÔéÌ‹”b˜éŞ9P•$¿w.·ô„ÁUôspı^€Zta­M«"¬£õN×º–şÂ®õRZßàZi½Ëµn u·k½’Ö=®uˆÖ½®u+|½Ò<À7¬5ÒKcı„ÄIî¦U'JiÔ‚0|
+EÃ¡@q¾S(Î¢4ñ¸÷\úÚ‚M¦¯loÂˆ]†=9À	ˆ¯%4ÿ=Xr
+eÃÉw†‹C‘YÈY”Ÿae¡|Å–
+U„ÑŠz¬véjqÜx%+ÔÓ@[©pmğå|(‹
+^HÀ‹N¢2ÔrPóIT5“5GñpsË,‡ NÕD«™Å3XbQµ<Ì .‹gÌ Ş¦-µiWZ´gÚ´ M»ŠµlWÛÄ›¸Ü\aÓVÚ´F‹ÖdÓB6­9‹–¬²i­6­-‹Õ3xÖ1ÔõZQ»ÆZ3GmUkÏœ wƒxg±Æ‰×t¬À5äü
+,ÄZ,¶m=ImÄrlÂl¦4Ú‚Ql…‰kq¶á^\‡ã¸p:	©çĞ'(Y9Ö!B:‡’¡uç¡`°fÁšqbY'Qƒ¢§	¤˜Î\D‘ˆ×•sNFÒŠ÷Õ‘—Àº¬?)X—Å†İÖ°±ğüwÒ™‡QE–Ïc‰sşUøÑHĞ¬ân"ñù/=…MÃt´›{š)º[èë1H½<®²¢WFªsÚ®¤´ySF¾UPy¨@ªi¬£±ìfíAË¢¥NöñŒ½g¤Å§lwÅ¡šãÀA1ÉqĞJ±—x>’ŞGÿô®r"²†FöÉoŸûµ…5¶Çå·ßñ[@º³¿ÍÙ_Âû7¹6—ä6§p£«9TÂı ÅÖ¾m³oUs­o×È!ÙÇ0N1@%9Ãˆkí]¹„À@ÚÒ ÔÊĞNíÇ4í•Èì0_. kˆOoQÇ­D+²Ğ,ø¨Š
+}Øgi¬±erıx‘Õáé&i!ÛH-^Hºëç#ñìÅ4+²0ov0w‘4Ë—‡šëgq=Uï,Úï/ N»€ËsÀå9àr~‰|‹'p‡ÜY<}À/u€ou€ï£Ÿ7¡ µµõ›}µ¾GQZë;Şò(JZ/=Š²õœÇ…¹b[FŞƒp%ŠæBBÁ5dìÂ­ÇmÄ?ì:ù†œ-9[œèñì6²ŠO¾/³N…ËBBñ“ˆ8\RFR·çÎ¿Ÿ
+wÕ[}n{‰Óç†}dÕ…K¢ .wºr¢>gK½c‹€—[òwüPK     A óºO_;   I   *   gradle-wrapper-shared-classpath.properties+(ÊÏJM.)¶M/JLÉIÕMJ,NÕMÌËË/I,ÉÌÏ+ÖŠ§eæ¤"8¥yÉ ÙÄ®¢Ò¼’ÌÜT[. PK     A            0   gradle-wrapper-shared-parameter-names.properties PK     A            	          íA    META-INF/PK     A ì?   T              ¤)   META-INF/MANIFEST.MFPK     A                      íAš   org/PK     A                      íA¾   org/gradle/PK     A                      íAé   org/gradle/util/PK     A                      íA  org/gradle/util/internal/PK     A QZÅÁA    >           ¤R  org/gradle/util/internal/WrapperDistributionUrlConverter.classPK     A                      íAï  org/gradle/wrapper/PK     A ¿°Ò©º    /           ¤"  org/gradle/wrapper/BootstrapMainStarter$1.classPK     A Êr'}	  
+  -           ¤)  org/gradle/wrapper/BootstrapMainStarter.classPK     A hQş}¢   Ò   #           ¤}  org/gradle/wrapper/Download$1.classPK     A Æ$G.  Ø  A           ¤`  org/gradle/wrapper/Download$DefaultDownloadProgressListener.classPK     A v"mpÃ  Ü  4           ¤í  org/gradle/wrapper/Download$ProxyAuthenticator.classPK     A fösî  ©+  !           ¤  org/gradle/wrapper/Download.classPK     A yL¢¡   Ê   1           ¤I)  org/gradle/wrapper/DownloadProgressListener.classPK     A ì„,y  †  -           ¤9*  org/gradle/wrapper/GradleUserHomeLookup.classPK     A úâæª   Û   "           ¤ı,  org/gradle/wrapper/IDownload.classPK     A ˜:‡C  ¬  "           ¤ç-  org/gradle/wrapper/Install$1.classPK     A [e'uz    -           ¤j3  org/gradle/wrapper/Install$InstallCheck.classPK     A J¢\ì  j6              ¤/6  org/gradle/wrapper/Install.classPK     A I¦ìˆq  4             ¤P  org/gradle/wrapper/Logger.classPK     A é`˜  ï  8           ¤/S  org/gradle/wrapper/PathAssembler$LocalDistribution.classPK     A W©Çº  @  &           ¤U  org/gradle/wrapper/PathAssembler.classPK     A „ÍëÂ  |	  0           ¤j\  org/gradle/wrapper/SystemPropertiesHandler.classPK     A @_E˜e  Y	  -           ¤za  org/gradle/wrapper/WrapperConfiguration.classPK     A —n0í	  ‰  (           ¤*e  org/gradle/wrapper/WrapperExecutor.classPK     A óºO_;   I   *           ¤]o  gradle-wrapper-shared-classpath.propertiesPK     A            0           ¤ào  gradle-wrapper-shared-parameter-names.propertiesPK      	  0p    
+
+-----8<----- FILE: gradle/wrapper/gradle-wrapper.properties -----8<-----
+
+distributionBase=GRADLE_USER_HOME
+distributionPath=wrapper/dists
+distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-bin.zip
+zipStoreBase=GRADLE_USER_HOME
+zipStorePath=wrapper/dists
+
+
+-----8<----- FILE: gradlew -----8<-----
+
+#!/usr/bin/env sh
+APP_HOME=$(dirname "$0")
+APP_HOME=$(cd "$APP_HOME" && pwd)
+CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
+JAVA_EXE=java
+exec "$JAVA_EXE" -Xms64m -Xmx512m -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+
+
+-----8<----- FILE: gradlew.bat -----8<-----
+
+@ECHO OFF
+SET DIR=%~dp0
+SET APP_HOME=%DIR%
+SET CLASSPATH=%APP_HOME%\gradle\wrapper\gradle-wrapper.jar
+SET JAVA_EXE=java
+"%JAVA_EXE%" -Xms64m -Xmx512m -classpath "%CLASSPATH%" org.gradle.wrapper.GradleWrapperMain %*
+
+
+-----8<----- FILE: settings.gradle.kts -----8<-----
+
+rootProject.name = "OnePlanAndroid"
+include(":app")
+pluginManagement { repositories { google(); mavenCentral(); gradlePluginPortal() } }
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
+    repositories { google(); mavenCentral() }
+}
