@@ -2,32 +2,56 @@ name: OnePlanAndroid — CI
 
 on:
   push:
-    branches: [ "refactor/v1" ]
+    branches: [ main, refactor/v1 ]
+  pull_request:
+    branches: [ main, refactor/v1 ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-java@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
-      - uses: gradle/actions/setup-gradle@v3
-      - name: Assemble Debug
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
         run: |
-          ./gradlew --no-daemon --stacktrace assembleDebug
-      - name: Upload APKs
+          gradle --no-daemon --stacktrace assembleDebug
+
+      - name: Upload APK(s)
         uses: actions/upload-artifact@v4
         with:
           name: oneplan-debug-apks
           path: app/build/outputs/apk/debug/*.apk
-      - name: Full Code Dump
+          if-no-files-found: error
+
+      - name: Full code dump (for review)
         run: |
-          mkdir -p dump && git ls-files > dump/FULL_CODE_DUMP.txt
-      - name: Upload Dump
+          git ls-files -z | xargs -0 -I{} sh -c 'echo "----- {}"; echo; sed -n "1,400p" "{}" || true; echo;'
+          : # cap file sizes automatically by sed
+        shell: bash
+        continue-on-error: true
+
+      - name: Upload FULL_CODE_DUMP
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: FULL_CODE_DUMP
-          path: dump/**
+          path: |
+            **/*.kt
+            **/*.kts
+            **/*.xml
+            **/*.gradle
+            **/*.md
+            .github/workflows/*.yml
