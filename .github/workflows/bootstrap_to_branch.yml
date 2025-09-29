@@ -1,46 +1,31 @@
 name: Bootstrap to branch
+
 on:
   workflow_dispatch:
   push:
     branches: [ main ]
 
 jobs:
-  bootstrap:
+  unpack:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
-      - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Extract ZIP with Python
+      - name: Extract OnePlan
         run: |
-          python3 - <<'PY'
-import zipfile, os, shutil
-z="oneplan-android-combined.zip"
-assert os.path.exists(z), f"{z} not found at repo root"
-tmp="_tmp_unpack"
-shutil.rmtree(tmp, ignore_errors=True); os.makedirs(tmp, exist_ok=True)
-with zipfile.ZipFile(z) as f: f.extractall(tmp)
-entries=[os.path.join(tmp,e) for e in os.listdir(tmp)]
-if len(entries)==1 and os.path.isdir(entries[0]):
-  src=entries[0]
-  for n in os.listdir(src): shutil.move(os.path.join(src,n), ".")
-else:
-  for n in os.listdir(tmp): shutil.move(os.path.join(tmp,n), ".")
-shutil.rmtree(tmp)
-print("Extracted.")
-PY
+          sudo apt-get update && sudo apt-get install -y unzip
+          unzip oneplan-android-combined.zip -d extracted
+          shopt -s dotglob
+          mv extracted/* .
+          rm -rf extracted
 
       - name: Commit & push to bootstrap branch
         run: |
           set -euxo pipefail
-          git config user.name  "oneplan-bot"
+          git config user.name "oneplan-bot"
           git config user.email "oneplan-bot@users.noreply.github.com"
-
-          # always push to a side branch
-          BR=bootstrap
-          git checkout -B "$BR"
+          git checkout -B bootstrap
           git add -A
-          git commit -m "bootstrap: add OnePlan Android project + CI" || echo "no changes"
-          git push -u origin "$BR"
+          git commit -m "bootstrap: add OnePlan Android project + CI" || echo "No changes"
+          git push -u origin bootstrap
