@@ -5,3 +5,4 @@ dependencyResolutionManagement {
 }
 rootProject.name = "OnePlanAndroid"
 include(":app")
+include(":desktop")
