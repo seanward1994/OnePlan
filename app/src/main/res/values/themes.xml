@@ -1,4 +1,4 @@
 <resources>
     <!-- App theme -->
-    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
 </resources>
