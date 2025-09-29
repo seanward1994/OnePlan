@@ -9,33 +9,18 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
-      - name: Ensure unzip is present
-        run: sudo apt-get update && sudo apt-get install -y unzip
-
-      - name: Unzip project into repo
-        shell: bash
+      - name: Unzip OnePlan
         run: |
-          set -e
-          test -f oneplan-android-combined.zip
-          mkdir -p _tmp_unpack
-          unzip -o oneplan-android-combined.zip -d _tmp_unpack
-          # If the zip contains a single top-level folder, move its contents up
-          ROOT_DIR_COUNT=$(find _tmp_unpack -mindepth 1 -maxdepth 1 -type d | wc -l)
-          FILE_COUNT=$(find _tmp_unpack -mindepth 1 -maxdepth 1 -type f | wc -l)
-          if [ "$ROOT_DIR_COUNT" -eq 1 ] && [ "$FILE_COUNT" -eq 0 ]; then
-            TOPDIR=$(find _tmp_unpack -mindepth 1 -maxdepth 1 -type d | head -n1)
-            shopt -s dotglob
-            mv -f "$TOPDIR"/* .
-          else
-            shopt -s dotglob
-            mv -f _tmp_unpack/* .
-          fi
-          rm -rf _tmp_unpack
+          sudo apt-get update && sudo apt-get install -y unzip
+          unzip -o oneplan-android-combined.zip -d extracted
+          shopt -s dotglob
+          mv -f extracted/* .
+          rm -rf extracted
 
       - name: Commit unpacked files
-        shell: bash
         run: |
           git config user.name "oneplan-bot"
           git config user.email "oneplan-bot@users.noreply.github.com"
