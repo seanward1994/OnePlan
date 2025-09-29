@@ -9,16 +9,34 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+        with: { fetch-depth: 0 }
 
-      - name: Extract OnePlan
+      - name: Extract ZIP with Python (no external deps)
         run: |
-          sudo apt-get update && sudo apt-get install -y unzip
-          unzip -o oneplan-android-combined.zip
-          ls -la
+          python3 - <<'PY'
+import zipfile, os, shutil
+ZIP = "oneplan-android-combined.zip"
+assert os.path.exists(ZIP), f"{ZIP} not found in repo root"
+tmp = "_tmp_unpack"
+if os.path.isdir(tmp): shutil.rmtree(tmp)
+os.makedirs(tmp, exist_ok=True)
+with zipfile.ZipFile(ZIP) as z:
+    z.extractall(tmp)
 
-      - name: Commit extracted files
+# Move contents to repo root (handles single-top-folder or many files)
+entries = [os.path.join(tmp, e) for e in os.listdir(tmp)]
+if len(entries) == 1 and os.path.isdir(entries[0]):
+    src = entries[0]
+    for name in os.listdir(src):
+        shutil.move(os.path.join(src, name), ".")
+else:
+    for name in os.listdir(tmp):
+        shutil.move(os.path.join(tmp, name), ".")
+shutil.rmtree(tmp)
+print("Extracted to repo root.")
+PY
+
+      - name: Commit unpacked files
         run: |
           git config user.name "oneplan-bot"
           git config user.email "oneplan-bot@users.noreply.github.com"
@@ -26,6 +44,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes."
           else
-            git commit -m "unpacked OnePlan project"
+            git commit -m "bootstrap: unpack OnePlan Android project + CI"
             git push
           fi
