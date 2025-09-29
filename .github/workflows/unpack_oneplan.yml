@@ -12,15 +12,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Unzip OnePlan
+      - name: Extract OnePlan
         run: |
           sudo apt-get update && sudo apt-get install -y unzip
-          unzip -o oneplan-android-combined.zip -d extracted
-          shopt -s dotglob
-          mv -f extracted/* .
-          rm -rf extracted
+          unzip -o oneplan-android-combined.zip
+          ls -la
 
-      - name: Commit unpacked files
+      - name: Commit extracted files
         run: |
           git config user.name "oneplan-bot"
           git config user.email "oneplan-bot@users.noreply.github.com"
@@ -28,6 +26,6 @@ jobs:
           if git diff --cached --quiet; then
             echo "No changes."
           else
-            git commit -m "bootstrap: unpack OnePlan Android project + CI"
+            git commit -m "unpacked OnePlan project"
             git push
           fi
