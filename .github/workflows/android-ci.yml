@@ -3,6 +3,7 @@ name: OnePlanAndroid — CI
 on:
   push:
     branches: [ main ]
+  pull_request:
   workflow_dispatch:
 
 jobs:
@@ -10,64 +11,37 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
-          distribution: 'temurin'
+          distribution: temurin
           java-version: '17'
 
-      - name: Ensure gradle.properties for AndroidX
-        run: |
-          set -euo pipefail
-          if [ ! -f gradle.properties ]; then
-            printf "android.useAndroidX=true\nandroid.enableJetifier=true\n" > gradle.properties
-          else
-            grep -q '^android.useAndroidX=true' gradle.properties || echo 'android.useAndroidX=true' >> gradle.properties
-            grep -q '^android.enableJetifier=true' gradle.properties || echo 'android.enableJetifier=true' >> gradle.properties
-          fi
+      # Use hosted Gradle so we don't depend on ./gradlew or wrapper JAR
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: '8.7'
+          cache-read-only: false
 
-      # ---- Self-heal Gradle Wrapper (no indentation inside the heredocs) ----
-      - name: Ensure Gradle Wrapper exists
-        shell: bash
+      # Ensure AndroidX flags exist even if the file isn't in the repo
+      - name: Ensure gradle.properties
         run: |
-          set -euo pipefail
-          mkdir -p gradle/wrapper
-          if [ ! -f gradle/wrapper/gradle-wrapper.jar ]; then
-            echo "Wrapper jar missing — downloading…"
-            curl -fsSL -o gradle-8.7-bin.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
-            unzip -p gradle-8.7-bin.zip gradle-8.7/lib/gradle-wrapper-*.jar > gradle/wrapper/gradle-wrapper.jar
-            rm -f gradle-8.7-bin.zip
-          fi
-          if [ ! -f gradlew ]; then
-            cat > gradlew <<'EOF'
-#!/usr/bin/env sh
-APP_HOME=$(dirname "$0")
-APP_HOME=$(cd "$APP_HOME" && pwd)
-CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-JAVA_EXE=java
-exec "$JAVA_EXE" -Xms64m -Xmx512m -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
-EOF
-            chmod +x gradlew
-          fi
-          cat > gradle/wrapper/gradle-wrapper.properties <<'EOF'
-distributionBase=GRADLE_USER_HOME
-distributionPath=wrapper/dists
-distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-bin.zip
-zipStoreBase=GRADLE_USER_HOME
-zipStorePath=wrapper/dists
-EOF
+          touch gradle.properties
+          grep -q '^android.useAndroidX=' gradle.properties || echo 'android.useAndroidX=true' >> gradle.properties
+          grep -q '^android.enableJetifier=' gradle.properties || echo 'android.enableJetifier=true' >> gradle.properties
+          grep -q '^org.gradle.jvmargs=' gradle.properties || echo 'org.gradle.jvmargs=-Xmx2048m -Dkotlin.daemon.jvm.options=-Xmx1024m' >> gradle.properties
 
-      - name: Build debug APK (with wrapper)
-        run: |
-          set -euo pipefail
-          ./gradlew --version
-          ./gradlew --no-daemon --stacktrace assembleDebug
+      - name: Build debug APK
+        run: gradle --no-daemon --stacktrace assembleDebug
 
       - name: Upload Debug APKs
         uses: actions/upload-artifact@v4
         with:
           name: oneplan-debug-apks
           path: '**/build/outputs/apk/debug/*.apk'
+
 
