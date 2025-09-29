@@ -9,72 +9,56 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
+        with:
+          fetch-depth: 0
 
-      - name: Debug: where are we?
-        run: |
-          echo "PWD=$(pwd)"
-          echo "BRANCH=${GITHUB_REF}"
-          echo "Repo contents BEFORE:"
-          ls -la
-
-      - name: Verify ZIP exists
-        run: |
-          set -euxo pipefail
-          test -f oneplan-android-combined.zip
-          ls -lh oneplan-android-combined.zip
-
-      - name: Extract ZIP with Python (no sudo, no apt)
+      - name: Extract ZIP (already succeeded earlier; keeping it here)
         run: |
           python3 - <<'PY'
-import zipfile, os, shutil, sys
-zip_name = "oneplan-android-combined.zip"
-print("Checking file:", zip_name, "exists:", os.path.exists(zip_name))
-if not os.path.exists(zip_name):
-    print("ERROR: ZIP not found in", os.listdir(".")); sys.exit(2)
-
+import zipfile, os, shutil
+z = "oneplan-android-combined.zip"
+assert os.path.exists(z), f"{z} not found"
 tmp = "_tmp_unpack"
 if os.path.isdir(tmp): shutil.rmtree(tmp)
 os.makedirs(tmp, exist_ok=True)
-
-with zipfile.ZipFile(zip_name) as z:
-    z.extractall(tmp)
-
-# Show what got extracted
-print("Top level in _tmp_unpack:", os.listdir(tmp))
-
-# If there is a single top folder, use its contents
+with zipfile.ZipFile(z) as f: f.extractall(tmp)
+# Move up (single top folder or many files)
 entries = [os.path.join(tmp, e) for e in os.listdir(tmp)]
 if len(entries) == 1 and os.path.isdir(entries[0]):
-    src = entries[0]
-    print("Single top folder:", src, "→ moving its contents up")
-    for name in os.listdir(src):
-        shutil.move(os.path.join(src, name), ".")
+  src = entries[0]
+  for n in os.listdir(src): shutil.move(os.path.join(src, n), ".")
 else:
-    print("Multiple entries at top → moving all up")
-    for name in os.listdir(tmp):
-        shutil.move(os.path.join(tmp, name), ".")
+  for n in os.listdir(tmp): shutil.move(os.path.join(tmp, n), ".")
 shutil.rmtree(tmp)
-print("DONE: files moved to repo root.")
+print("Extracted into repo root.")
 PY
 
       - name: Show repo after extract
         run: |
-          echo "Repo contents AFTER:"
+          echo "Root listing:"
           ls -la
-          echo "Check for app module:"
+          echo "App listing:"
           ls -la app || true
-          echo "Check workflows:"
+          echo "Workflows listing:"
           ls -la .github/workflows || true
 
-      - name: Commit unpacked files
+      - name: Commit & push (force-safe)
         run: |
+          set -euxo pipefail
           git config user.name "oneplan-bot"
           git config user.email "oneplan-bot@users.noreply.github.com"
+
+          # Ensure we're on main and up to date
+          git checkout -B main
+          git pull --rebase origin main || true
+
+          # Stage and show what will be committed
           git add -A
-          if git diff --cached --quiet; then
-            echo "No changes."
-          else
-            git commit -m "bootstrap: unpack OnePlan Android project + CI"
-            git push
-          fi
+          echo "Staged changes:"
+          git status --porcelain || true
+
+          # Commit even if there are many files; if nothing to commit, don't fail
+          git commit -m "bootstrap: unpack OnePlan Android project + CI" || echo "No changes to commit"
+
+          # Push (create main if needed). Use explicit ref to avoid HEAD confusion.
+          git push origin HEAD:main
