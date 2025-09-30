@@ -1,0 +1,15 @@
+name: OnePlan Windows — Stub (non-blocking)
+on:
+  push:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  prepare-windows:
+    runs-on: windows-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Placeholder
+        run: |
+          echo "Windows packaging will be added after Android beta is stable."
