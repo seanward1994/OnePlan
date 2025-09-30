@@ -8,5 +8,8 @@ private val Colors = lightColorScheme()
 
 @Composable
 fun OnePlanTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = Colors, content = content)
+    MaterialTheme(
+        colorScheme = Colors,
+        content = content
+    )
 }

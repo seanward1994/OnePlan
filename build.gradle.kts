@@ -1,1 +1,7 @@
-// Root kept minimal; repositories in settings.gradle.kts
+// Root kept minimal to avoid duplicate plugins {} issues.
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
