@@ -1,0 +1,351 @@
+# OnePlan — full source dump (2025-09-30T14:28:38Z)
+
+## File list
+.github/workflows/android-ci.yml
+.gitignore
+.oneplan_versioncode
+app/build.gradle.kts
+app/proguard-rules.pro
+app/src/main/AndroidManifest.xml
+app/src/main/java/com/oneplan/app/MainActivity.kt
+app/src/main/java/com/oneplan/app/Theme.kt
+app/src/main/res/drawable/ic_launcher_foreground.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml
+app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml
+app/src/main/res/values/colors.xml
+app/src/main/res/values/themes.xml
+build.gradle.kts
+dump_code.sh
+gradle.properties
+settings.gradle.kts
+
+## Sources
+
+
+-----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
+
+name: OnePlanAndroid — CI
+on:
+  push:
+    branches: [ main, refactor/** ]
+  pull_request:
+    branches: [ main, refactor/** ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Build debug APK
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Upload APK(s)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Make FULL_CODE_DUMP.txt
+        if: always()
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files \
+            ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' \
+            ':!**/*.keystore' ':!**/*.jks' | while read -r f; do
+              echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+              sed -n '1,1500p' "$f" >> "$OUT" || true
+            done
+
+      - name: Upload FULL_CODE_DUMP
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+
+
+-----8<----- FILE: .gitignore -----8<-----
+
+*.iml
+.gradle
+/local.properties
+/.idea
+/captures
+.externalNativeBuild
+.cxx
+/build
+app/build
+*.keystore
+*.jks
+
+
+-----8<----- FILE: .oneplan_versioncode -----8<-----
+
+2
+
+-----8<----- FILE: app/build.gradle.kts -----8<-----
+
+plugins {
+    id("com.android.application") version "8.5.2"
+    kotlin("android") version "1.9.23"
+}
+
+android {
+    namespace = "com.oneplan.app"
+    compileSdk = 34
+
+    defaultConfig {
+        applicationId = "com.oneplan.app"
+        minSdk = 24
+        targetSdk = 34
+        versionCode = (System.getenv("VC") ?: "1").toInt()
+        versionName = "0.4.${versionCode}"
+        vectorDrawables { useSupportLibrary = true }
+    }
+
+    buildTypes {
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug { isDebuggable = true }
+    }
+
+    buildFeatures { compose = true }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.12" }
+
+    packaging {
+        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
+    }
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlinOptions { jvmTarget = "17" }
+}
+
+dependencies {
+    val composeBom = platform("androidx.compose:compose-bom:2024.08.00")
+    implementation(composeBom)
+    androidTestImplementation(composeBom)
+
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.activity:activity-compose:1.9.2")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
+
+    // Compose UI + Material3
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.navigation:navigation-compose:2.8.2")
+
+    // Debug/Test
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+}
+
+
+-----8<----- FILE: app/proguard-rules.pro -----8<-----
+
+# (empty)
+
+
+-----8<----- FILE: app/src/main/AndroidManifest.xml -----8<-----
+
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application
+        android:label="OnePlanAlpha"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:theme="@style/Theme.OnePlan">
+        <activity
+            android:name="com.oneplan.app.MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/MainActivity.kt -----8<-----
+
+package com.oneplan.app
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+
+class MainActivity : ComponentActivity() {
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        setContent {
+            OnePlanTheme {
+                var tab by remember { mutableStateOf(0) }
+                Scaffold(
+                    topBar = { TopAppBar(title = { Text("OnePlan Alpha") }) }
+                ) { inner ->
+                    Column(Modifier.padding(inner).fillMaxSize()) {
+                        TabRow(selectedTabIndex = tab) {
+                            Tab(selected = tab==0, onClick={tab=0}, text={ Text("Budget") })
+                            Tab(selected = tab==1, onClick={tab=1}, text={ Text("Meals") })
+                        }
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text(if (tab==0) "Budget — placeholder" else "Meals — placeholder")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+
+-----8<----- FILE: app/src/main/java/com/oneplan/app/Theme.kt -----8<-----
+
+package com.oneplan.app
+
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.lightColorScheme
+import androidx.compose.runtime.Composable
+
+private val Colors = lightColorScheme()
+
+@Composable
+fun OnePlanTheme(content: @Composable () -> Unit) {
+    MaterialTheme(colorScheme = Colors, content = content)
+}
+
+
+-----8<----- FILE: app/src/main/res/drawable/ic_launcher_foreground.xml -----8<-----
+
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#2F80ED" android:pathData="M0,0h108v108h-108z"/>
+    <path android:fillColor="#FFFFFF" android:pathData="M24,54h60v8h-60z"/>
+</vector>
+
+
+-----8<----- FILE: app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml -----8<-----
+
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@android:color/white"/>
+    <foreground android:drawable="@android:color/black"/>
+</adaptive-icon>
+
+
+-----8<----- FILE: app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml -----8<-----
+
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@android:color/white"/>
+    <foreground android:drawable="@android:color/black"/>
+</adaptive-icon>
+
+
+-----8<----- FILE: app/src/main/res/values/colors.xml -----8<-----
+
+<resources>
+    <color name="oneplan_primary">#2F80ED</color>
+</resources>
+
+
+-----8<----- FILE: app/src/main/res/values/themes.xml -----8<-----
+
+<resources>
+    <!-- Material3 has Theme.Material3.DayNight (no NoActionBar variant needed for Compose). -->
+    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight"/>
+</resources>
+
+
+-----8<----- FILE: build.gradle.kts -----8<-----
+
+// Root kept minimal to avoid duplicate plugins
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+
+-----8<----- FILE: dump_code.sh -----8<-----
+
+#!/usr/bin/env bash
+set -euo pipefail
+OUT="FULL_CODE_DUMP.txt"
+echo "# OnePlanAlpha — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+echo >> "$OUT"
+echo "## File list" >> "$OUT"
+git ls-files | sort >> "$OUT"
+echo >> "$OUT"
+echo "## Sources" >> "$OUT"
+git ls-files \
+  ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' \
+  ':!**/*.keystore' ':!**/*.jks' \
+| while read -r f; do
+    echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+    sed -n '1,5000p' "$f" >> "$OUT" || true
+  done
+echo "✅ Wrote $OUT"
+
+
+-----8<----- FILE: gradle.properties -----8<-----
+
+org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+android.useAndroidX=true
+kotlin.code.style=official
+
+
+-----8<----- FILE: settings.gradle.kts -----8<-----
+
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.PREFER_SETTINGS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+rootProject.name = "OnePlanAndroid"
+include(":app")

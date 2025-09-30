@@ -20,14 +20,11 @@ class MainActivity : ComponentActivity() {
                 ) { inner ->
                     Column(Modifier.padding(inner).fillMaxSize()) {
                         TabRow(selectedTabIndex = tab) {
-                            Tab(selected = tab == 0, onClick = { tab = 0 }, text = { Text("Home") })
-                            Tab(selected = tab == 1, onClick = { tab = 1 }, text = { Text("About") })
+                            Tab(selected = tab==0, onClick={tab=0}, text={ Text("Budget") })
+                            Tab(selected = tab==1, onClick={tab=1}, text={ Text("Meals") })
                         }
                         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            when (tab) {
-                                0 -> Text("Hello 👋 — Alpha is running.")
-                                1 -> Text("Material3 theme fixed. CI should be green.")
-                            }
+                            Text(if (tab==0) "Budget — placeholder" else "Meals — placeholder")
                         }
                     }
                 }
