@@ -1,11 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="OnePlan"
+        android:label="OnePlanMegaAlpha"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
         android:theme="@style/Theme.OnePlan">
         <activity
-            android:name="com.oneplan.app.MainActivity"
+            android:name="com.oneplan.megaalpha.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>

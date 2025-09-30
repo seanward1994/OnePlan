@@ -1,1 +1,20 @@
-// Root kept minimal; repositories in settings.gradle.kts
+// Root kept minimal: repositories only
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+        google()
+    }
+}
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+allprojects {
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
