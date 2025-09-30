@@ -1,6 +1,7 @@
-#!/usr/bin/env sh
-APP_HOME=$(dirname "$0")
-APP_HOME=$(cd "$APP_HOME" && pwd)
-CLASSPATH=$APP_HOME/gradle/wrapper/gradle-wrapper.jar
-JAVA_EXE=java
-exec "$JAVA_EXE" -Xms64m -Xmx512m -classpath "$CLASSPATH" org.gradle.wrapper.GradleWrapperMain "$@"
+#!/usr/bin/env bash
+set -euo pipefail
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+JAVA_TOOL_OPTIONS="${JAVA_TOOL_OPTIONS:-} -Dfile.encoding=UTF-8" \
+exec "${DIR}/gradle/wrapper/gradle-wrapper.jar" 2>/dev/null || \
+exec "${DIR}/gradle" 2>/dev/null || \
+exec ./gradle -q "$@"
