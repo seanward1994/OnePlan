@@ -1,4 +1,4 @@
-// Root kept minimal to avoid duplicate plugins
+// Keep root minimal (avoid duplicate plugins block)
 allprojects {
     repositories {
         google()

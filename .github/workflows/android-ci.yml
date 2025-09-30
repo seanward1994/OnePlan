@@ -1,9 +1,9 @@
 name: OnePlanAndroid — CI
 on:
   push:
-    branches: [ main, refactor/** ]
+    branches: [ main, megaalpha/v1 ]
   pull_request:
-    branches: [ main, refactor/** ]
+    branches: [ main, megaalpha/v1 ]
   workflow_dispatch:
 
 jobs:
@@ -14,19 +14,19 @@ jobs:
         uses: actions/checkout@v4
         with: { fetch-depth: 1 }
 
-      - name: Setup Java
+      - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - name: Ensure gradlew is executable
+        run: chmod +x gradlew
 
-      - name: Build debug APK
+      - name: Build debug APK (wrapper)
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Upload APK(s)
+      - name: Upload APK(s) (warn if none)
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -34,7 +34,7 @@ jobs:
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
 
-      - name: Make FULL_CODE_DUMP.txt
+      - name: Generate FULL_CODE_DUMP (always)
         if: always()
         run: |
           OUT="FULL_CODE_DUMP.txt"
@@ -46,14 +46,17 @@ jobs:
           echo "## Sources" >> "$OUT"
           git ls-files \
             ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' \
-            ':!**/*.keystore' ':!**/*.jks' | while read -r f; do
+            ':!**/*.keystore' ':!**/*.jks' \
+          | while read -r f; do
               echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
-              sed -n '1,1500p' "$f" >> "$OUT" || true
+              sed -n '1,4000p' "$f" >> "$OUT" || true
             done
+          test -s "$OUT" && echo "Wrote $OUT"
 
-      - name: Upload FULL_CODE_DUMP
+      - name: Upload FULL_CODE_DUMP (always)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: FULL_CODE_DUMP
           path: FULL_CODE_DUMP.txt
+          if-no-files-found: error

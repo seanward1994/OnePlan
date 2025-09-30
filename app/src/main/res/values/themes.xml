@@ -1,4 +1,4 @@
 <resources>
-    <!-- Material3 has Theme.Material3.DayNight (no NoActionBar variant needed for Compose). -->
-    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight"/>
+    <!-- Fixes AAPT error by referencing a theme provided by com.google.android.material -->
+    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
 </resources>
