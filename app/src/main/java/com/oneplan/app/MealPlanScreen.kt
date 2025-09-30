@@ -1,4 +1,4 @@
-package com.oneplan.megaalpha
+package com.oneplan.app
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,9 +21,7 @@ fun MealPlanScreen() {
     LaunchedEffect(Unit) { items = repos.meals.list() }
     fun reload() = scope.launch { items = repos.meals.list() }
 
-    Scaffold(floatingActionButton = {
-        FloatingActionButton(onClick = { showAdd = true }) { Text("+") }
-    }) { pad ->
+    Scaffold(floatingActionButton = { FloatingActionButton({ showAdd = true }) { Text("+") } }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             Text("Meals", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(12.dp))
@@ -33,11 +31,9 @@ fun MealPlanScreen() {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(item.title, style = MaterialTheme.typography.titleMedium)
-                                Text("\${item.calories} kcal  \${item.day}", style = MaterialTheme.typography.bodySmall)
+                                Text("${item.calories} kcal  ${item.day}", style = MaterialTheme.typography.bodySmall)
                             }
-                            OutlinedButton(onClick = { scope.launch { repos.meals.remove(item); reload() } }) {
-                                Text("Delete")
-                            }
+                            OutlinedButton(onClick = { scope.launch { repos.meals.remove(item); reload() } }) { Text("Delete") }
                         }
                     }
                 }
@@ -47,9 +43,7 @@ fun MealPlanScreen() {
 
     if (showAdd) AddMealDialog(
         onDismiss = { showAdd = false },
-        onAdd = { title, kcal, day ->
-            scope.launch { repos.meals.add(Meal(title = title, calories = kcal, day = day)); reload(); showAdd = false }
-        }
+        onAdd = { title, kcal, day -> scope.launch { repos.meals.add(Meal(title = title, calories = kcal, day = day)); reload(); showAdd = false } }
     )
 }
 
@@ -68,11 +62,7 @@ private fun AddMealDialog(onDismiss: () -> Unit, onAdd: (String, Int, String) ->
                 OutlinedTextField(label = { Text("Day") }, value = day, onValueChange = { day = it })
             }
         },
-        confirmButton = {
-            TextButton(onClick = {
-                onAdd(title.text.trim(), calories.text.toIntOrNull() ?: 0, day.text.trim())
-            }) { Text("Add") }
-        },
+        confirmButton = { TextButton(onClick = { onAdd(title.text.trim(), calories.text.toIntOrNull() ?: 0, day.text.trim()) }) { Text("Add") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )
 }

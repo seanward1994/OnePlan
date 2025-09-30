@@ -1,4 +1,4 @@
-package com.oneplan.megaalpha
+package com.oneplan.app
 
 import androidx.room.*
 

@@ -1,4 +1,4 @@
-package com.oneplan.megaalpha
+package com.oneplan.app
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -21,9 +21,7 @@ fun BudgetScreen() {
     LaunchedEffect(Unit) { items = repos.budget.list() }
     fun reload() = scope.launch { items = repos.budget.list() }
 
-    Scaffold(floatingActionButton = {
-        FloatingActionButton(onClick = { showAdd = true }) { Text("+") }
-    }) { pad ->
+    Scaffold(floatingActionButton = { FloatingActionButton({ showAdd = true }) { Text("+") } }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             Text("Budget", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(12.dp))
@@ -37,9 +35,7 @@ fun BudgetScreen() {
                             }
                             Text("$${"%.2f".format(item.amountCents / 100.0)}")
                             Spacer(Modifier.width(8.dp))
-                            OutlinedButton(onClick = { scope.launch { repos.budget.remove(item); reload() } }) {
-                                Text("Delete")
-                            }
+                            OutlinedButton(onClick = { scope.launch { repos.budget.remove(item); reload() } }) { Text("Delete") }
                         }
                     }
                 }
@@ -50,10 +46,7 @@ fun BudgetScreen() {
     if (showAdd) AddBudgetDialog(
         onDismiss = { showAdd = false },
         onAdd = { label, cents, cat ->
-            scope.launch {
-                repos.budget.add(BudgetItem(label = label, amountCents = cents, category = cat))
-                reload(); showAdd = false
-            }
+            scope.launch { repos.budget.add(BudgetItem(label = label, amountCents = cents, category = cat)); reload(); showAdd = false }
         }
     )
 }

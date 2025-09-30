@@ -1,4 +1,4 @@
-package com.oneplan.megaalpha
+package com.oneplan.app
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.*
@@ -14,29 +14,19 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
 
-val LocalRepos = compositionLocalOf<Repos> { error("Repos not provided") }
-
 @Composable
 fun OnePlanApp() {
     val nav = rememberNavController()
     Scaffold(
-        topBar = { TopAppBar(title = { Text("OnePlanMegaAlpha") }) },
+        topBar = { TopAppBar(title = { Text("OnePlan") }) },
         bottomBar = { OnePlanBottomBar(nav) }
     ) { pad ->
-        CompositionLocalProvider(LocalRepos provides rememberAppRepos()) {
-            NavHost(navController = nav, startDestination = "budget", modifier = Modifier.padding(pad)) {
-                composable("budget") { BudgetScreen() }
-                composable("meals") { MealPlanScreen() }
-                composable("settings") { SettingsScreen() }
-            }
+        NavHost(navController = nav, startDestination = "budget", modifier = Modifier.padding(pad)) {
+            composable("budget") { BudgetScreen() }
+            composable("meals") { MealPlanScreen() }
+            composable("settings") { SettingsScreen() }
         }
     }
-}
-
-@Composable
-private fun rememberAppRepos(): Repos {
-    val ctx = androidx.compose.ui.platform.LocalContext.current.applicationContext
-    return remember { Repos(ctx) }
 }
 
 @Composable

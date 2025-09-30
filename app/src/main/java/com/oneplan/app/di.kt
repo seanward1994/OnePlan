@@ -1,4 +1,4 @@
-package com.oneplan.megaalpha
+package com.oneplan.app
 
 import android.content.Context
 import androidx.datastore.preferences.core.edit
@@ -12,9 +12,9 @@ import kotlinx.coroutines.flow.map
 val Context.dataStore by preferencesDataStore("oneplan_prefs")
 
 class Repos(context: Context) {
-    private val db = Room.databaseBuilder(
-        context, OnePlanDb::class.java, "oneplan.db"
-    ).fallbackToDestructiveMigration().build()
+    private val db = Room.databaseBuilder(context, OnePlanDb::class.java, "oneplan.db")
+        .fallbackToDestructiveMigration()
+        .build()
 
     val budget = db.budget()
     val meals = db.meals()

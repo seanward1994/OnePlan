@@ -1,4 +1,4 @@
-package com.oneplan.megaalpha
+package com.oneplan.app
 
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
