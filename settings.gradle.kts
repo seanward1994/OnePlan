@@ -1,5 +1,3 @@
-rootProject.name = "OnePlanAndroid"
-
 pluginManagement {
     repositories {
         google()
@@ -14,4 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
+rootProject.name = "OnePlanAndroid"
 include(":app")

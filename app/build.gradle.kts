@@ -1,7 +1,6 @@
 plugins {
     id("com.android.application") version "8.5.2"
     kotlin("android") version "1.9.23"
-    id("com.google.devtools.ksp") version "1.9.23-1.0.20"
 }
 
 android {
@@ -12,20 +11,18 @@ android {
         applicationId = "com.oneplan.app"
         minSdk = 24
         targetSdk = 34
-        // Versioning from env or file fallback
-        val envVc = System.getenv("VC")
-        val fileVc = runCatching {
-            file("${rootDir}/.oneplan_versioncode").takeIf { it.exists() }?.readText()?.trim()
-        }.getOrNull()
-        versionCode = (envVc ?: fileVc ?: "1").toInt()
-        versionName = "0.4." + versionCode
+        versionCode = (System.getenv("VC") ?: "1").toInt()
+        versionName = "0.4.${versionCode}"
         vectorDrawables { useSupportLibrary = true }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
         debug { isDebuggable = true }
     }
@@ -34,7 +31,7 @@ android {
     composeOptions { kotlinCompilerExtensionVersion = "1.5.12" }
 
     packaging {
-        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     }
 
     compileOptions {
@@ -49,27 +46,17 @@ dependencies {
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
-    // Core
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
 
-    // Compose + Material3 + Nav
+    // Compose UI + Material3
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.navigation:navigation-compose:2.8.0")
+    implementation("androidx.navigation:navigation-compose:2.8.2")
 
-    // DataStore
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
-
-    // Room (with KSP)
-    val room = "2.6.1"
-    implementation("androidx.room:room-ktx:$room")
-    ksp("androidx.room:room-compiler:$room")
-
-    // Debug/testing
+    // Debug/Test
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

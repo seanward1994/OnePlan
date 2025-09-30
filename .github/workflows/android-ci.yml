@@ -23,20 +23,19 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Bump versionCode from file
-        run: echo "VC=$(cat .oneplan_versioncode)" >> $GITHUB_ENV
-
       - name: Build debug APK
-        run: gradle --no-daemon --stacktrace :app:assembleDebug
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
       - name: Upload APK(s)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: oneplan-debug-apks
           path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+          if-no-files-found: warn
 
-      - name: Generate FULL_CODE_DUMP.txt
+      - name: Make FULL_CODE_DUMP.txt
+        if: always()
         run: |
           OUT="FULL_CODE_DUMP.txt"
           echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
@@ -45,16 +44,16 @@ jobs:
           git ls-files | sort >> "$OUT"
           echo >> "$OUT"
           echo "## Sources" >> "$OUT"
-          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
-          | while read -r f; do
+          git ls-files \
+            ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' \
+            ':!**/*.keystore' ':!**/*.jks' | while read -r f; do
               echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
-              sed -n '1,4000p' "$f" >> "$OUT" || true
+              sed -n '1,1500p' "$f" >> "$OUT" || true
             done
-          echo "Generated $OUT"
 
       - name: Upload FULL_CODE_DUMP
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: FULL_CODE_DUMP
           path: FULL_CODE_DUMP.txt
-          if-no-files-found: error
