@@ -12,8 +12,8 @@ android {
         minSdk = 24
         targetSdk = 34
         versionCode = (System.getenv("VC") ?: "1").toInt()
-        versionName = "0.4.${versionCode}"
-        vectorDrawables { useSupportLibrary = true }
+        versionName = "1.0.${System.getenv("VC") ?: "1"}"
+        vectorDrawables.useSupportLibrary = true
     }
 
     buildTypes {
@@ -30,10 +30,6 @@ android {
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.12" }
 
-    packaging {
-        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -42,7 +38,8 @@ android {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.08.00")
+    // Compose BOM
+    val composeBom = platform("androidx.compose:compose-bom:2024.09.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
@@ -50,13 +47,15 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
 
-    // Compose UI + Material3
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    implementation("androidx.navigation:navigation-compose:2.8.2")
+    implementation("androidx.compose.material:material-icons-extended")
 
-    // Debug/Test
+    // **Theme fix**: Provide a known existing XML theme parent via MDC + AppCompat.
+    implementation("com.google.android.material:material:1.12.0")
+    implementation("androidx.appcompat:appcompat:1.7.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")

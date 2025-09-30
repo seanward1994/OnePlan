@@ -10,46 +10,41 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with: { fetch-depth: 1 }
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
+      - uses: gradle/actions/setup-gradle@v3
 
-      - name: Build debug APK
+      - name: Build (debug)
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
+      - name: Full code dump (always)
+        if: always()
+        run: |
+          echo "# FULL CODE DUMP — $(date -u)" > FULL_CODE_DUMP.txt
+          echo >> FULL_CODE_DUMP.txt
+          echo "## File list" >> FULL_CODE_DUMP.txt
+          git ls-files | sort >> FULL_CODE_DUMP.txt
+          echo >> FULL_CODE_DUMP.txt
+          echo "## Sources" >> FULL_CODE_DUMP.txt
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+          | while read -r f; do
+              echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> FULL_CODE_DUMP.txt
+              sed -n '1,5000p' "$f" >> FULL_CODE_DUMP.txt || true
+            done
 
       - name: Upload APK(s)
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: oneplan-debug-apks
+          name: oneplan-debug-apk
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
-
-      - name: Make FULL_CODE_DUMP.txt
-        if: always()
-        run: |
-          OUT="FULL_CODE_DUMP.txt"
-          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
-          echo >> "$OUT"
-          echo "## File list" >> "$OUT"
-          git ls-files | sort >> "$OUT"
-          echo >> "$OUT"
-          echo "## Sources" >> "$OUT"
-          git ls-files \
-            ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' \
-            ':!**/*.keystore' ':!**/*.jks' | while read -r f; do
-              echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
-              sed -n '1,1500p' "$f" >> "$OUT" || true
-            done
 
       - name: Upload FULL_CODE_DUMP
         if: always()

@@ -1,4 +1,3 @@
 <resources>
-    <!-- Material3 has Theme.Material3.DayNight (no NoActionBar variant needed for Compose). -->
-    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight"/>
+    <style name="Theme.OnePlan" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
 </resources>
