@@ -1,7 +1,7 @@
-// Root kept lean to avoid duplicate plugins errors
+// Keep root lean to avoid duplicate `plugins {}` problems
 allprojects {
-  repositories {
-    google()
-    mavenCentral()
-  }
+    repositories {
+        google()
+        mavenCentral()
+    }
 }

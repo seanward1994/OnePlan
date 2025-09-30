@@ -20,40 +20,51 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Setup Gradle
+      - name: Setup Gradle cache
         uses: gradle/actions/setup-gradle@v3
 
-      - name: Pre-build Source Dump (always)
-        if: always()
-        run: |
-          OUT_TXT="FULL_CODE_DUMP.txt"
-          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT_TXT"
-          git ls-files | sort >> "$OUT_TXT"
-          echo >> "$OUT_TXT"
-          git ls-files | while read -r f; do
-            echo -e "\n\n----- FILE: $f -----\n" >> "$OUT_TXT"
-            sed -n '1,400p' "$f" >> "$OUT_TXT" || true
-          done
-          sudo apt-get update -y && sudo apt-get install -y pandoc zip
-          pandoc "$OUT_TXT" -o FULL_CODE_DUMP.docx --standalone || true
-          zip -r FULL_CODE_DUMP.zip "$OUT_TXT" app *.kts *.gradle **/*.kt **/*.xml || true
+      - name: Generate Gradle wrapper (8.7)
+        run: gradle --no-daemon wrapper --gradle-version 8.7
 
-      - name: Build debug APK
+      - name: Build Debug APK
+        id: build
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
 
+      # Always dump code/logs, even if build failed
+      - name: Write FULL_CODE_DUMP.txt (always)
+        if: always()
+        run: |
+          TS="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($TS)" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.jar' |
+            while read -r f; do
+              echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+              sed -n '1,4000p' "$f" >> "$OUT" || true
+            done
+          # Also capture Gradle build scan-ish logs
+          mkdir -p build_logs
+          (test -f build/reports/problems/problems-report.html && cp build/reports/problems/problems-report.html build_logs/ || true)
+          (test -d app/build/outputs/apk/debug && ls -l app/build/outputs/apk/debug/ > build_logs/apk_listing.txt || true)
+      
       - name: Upload APK(s)
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: oneplan-debug-apks
           path: app/build/outputs/apk/debug/*.apk
-          if-no-files-found: error
+          if-no-files-found: warn
 
-      - name: Upload FULL_CODE_DUMP artifacts
+      - name: Upload FULL_CODE_DUMP + logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: FULL_CODE_DUMPS
+          name: FULL_CODE_DUMP_and_logs
           path: |
             FULL_CODE_DUMP.txt
-            FULL_CODE_DUMP.docx
-            FULL_CODE_DUMP.zip
+            build_logs/**

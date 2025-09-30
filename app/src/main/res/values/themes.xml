@@ -1,4 +1,4 @@
 <resources>
-    <!-- ✅ This now resolves because MDC is added -->
-    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar" />
+    <!-- Uses Material Components v1.12.0: Theme.Material3.DayNight.NoActionBar exists here -->
+    <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
 </resources>
