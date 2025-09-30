@@ -1,6 +1,6 @@
-# FULL CODE DUMP — 2025-09-30T19:58:56Z
+OnePlan full source dump — 2025-09-30T20:05:45Z
 
-## File list
+### File list
 .github/workflows/android-ci.yml
 .gitignore
 .oneplan_versioncode
@@ -29,8 +29,7 @@ gradlew
 gradlew.bat
 settings.gradle.kts
 
-## Sources
-
+### Sources
 
 -----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
 
@@ -89,7 +88,6 @@ jobs:
           name: FULL_CODE_DUMP
           path: FULL_CODE_DUMP.txt
 
-
 -----8<----- FILE: .gitignore -----8<-----
 
 *.iml
@@ -104,16 +102,14 @@ app/build
 *.keystore
 *.jks
 
-
 -----8<----- FILE: .oneplan_versioncode -----8<-----
 
 4
-
 -----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
 
-# FULL CODE DUMP — 2025-09-30T19:58:56Z
+OnePlan full source dump — 2025-09-30T20:05:45Z
 
-## File list
+### File list
 .github/workflows/android-ci.yml
 .gitignore
 .oneplan_versioncode
@@ -142,8 +138,7 @@ gradlew
 gradlew.bat
 settings.gradle.kts
 
-## Sources
-
+### Sources
 
 -----8<----- FILE: .github/workflows/android-ci.yml -----8<-----
 
@@ -202,7 +197,6 @@ jobs:
           name: FULL_CODE_DUMP
           path: FULL_CODE_DUMP.txt
 
-
 -----8<----- FILE: .gitignore -----8<-----
 
 *.iml
@@ -217,13 +211,10 @@ app/build
 *.keystore
 *.jks
 
-
 -----8<----- FILE: .oneplan_versioncode -----8<-----
 
 4
-
 -----8<----- FILE: FULL_CODE_DUMP.txt -----8<-----
-
 
 
 -----8<----- FILE: app/build.gradle.kts -----8<-----
@@ -293,11 +284,9 @@ dependencies {
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
 
-
 -----8<----- FILE: app/proguard-rules.pro -----8<-----
 
 # (empty)
-
 
 -----8<----- FILE: app/src/main/AndroidManifest.xml -----8<-----
 
@@ -318,9 +307,7 @@ dependencies {
     </application>
 </manifest>
 
-
 -----8<----- FILE: app/src/main/java/com/oneplan/app/BudgetScreen.kt -----8<-----
-
 
 
 -----8<----- FILE: app/src/main/java/com/oneplan/app/MainActivity.kt -----8<-----
@@ -361,33 +348,25 @@ class MainActivity : ComponentActivity() {
   }
 }
 
-
 -----8<----- FILE: app/src/main/java/com/oneplan/app/MealPlanScreen.kt -----8<-----
-
 
 
 -----8<----- FILE: app/src/main/java/com/oneplan/app/Nav.kt -----8<-----
 
 
-
 -----8<----- FILE: app/src/main/java/com/oneplan/app/SettingsScreen.kt -----8<-----
-
 
 
 -----8<----- FILE: app/src/main/java/com/oneplan/app/Theme.kt -----8<-----
 
 
-
 -----8<----- FILE: app/src/main/java/com/oneplan/app/data.kt -----8<-----
-
 
 
 -----8<----- FILE: app/src/main/java/com/oneplan/app/di.kt -----8<-----
 
 
-
 -----8<----- FILE: app/src/main/res/drawable/ic_launcher_foreground.xml -----8<-----
-
 
 
 -----8<----- FILE: app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml -----8<-----
@@ -397,7 +376,6 @@ class MainActivity : ComponentActivity() {
     <foreground android:drawable="@android:drawable/sym_def_app_icon" />
 </adaptive-icon>
 
-
 -----8<----- FILE: app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml -----8<-----
 
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
@@ -405,20 +383,17 @@ class MainActivity : ComponentActivity() {
     <foreground android:drawable="@android:drawable/sym_def_app_icon" />
 </adaptive-icon>
 
-
 -----8<----- FILE: app/src/main/res/values/colors.xml -----8<-----
 
 <resources>
     <color name="oneplan_primary">#2F80ED</color>
 </resources>
 
-
 -----8<----- FILE: app/src/main/res/values/themes.xml -----8<-----
 
 <resources>
     <style name="Theme.OnePlan" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
 </resources>
-
 
 -----8<----- FILE: build.gradle.kts -----8<-----
 
@@ -429,7 +404,6 @@ allprojects {
     mavenCentral()
   }
 }
-
 
 -----8<----- FILE: dump_code.sh -----8<-----
 
@@ -451,13 +425,11 @@ git ls-files \
   done
 echo "✅ Local FULL_CODE_DUMP written to $OUT"
 
-
 -----8<----- FILE: gradle.properties -----8<-----
 
 org.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
 android.useAndroidX=true
 kotlin.code.style=official
-
 
 -----8<----- FILE: gradle/wrapper/gradle-wrapper.properties -----8<-----
 
@@ -466,7 +438,6 @@ distributionPath=wrapper/dists
 distributionUrl=https\://services.gradle.org/distributions/gradle-8.7-all.zip
 zipStoreBase=GRADLE_USER_HOME
 zipStorePath=wrapper/dists
-
 
 -----8<----- FILE: gradlew -----8<-----
 
@@ -485,7 +456,6 @@ else
   exec gradle "$@"
 fi
 
-
 -----8<----- FILE: gradlew.bat -----8<-----
 
 @ECHO OFF
@@ -495,7 +465,6 @@ IF EXIST "%DIR%gradle\wrapper\gradle-wrapper.jar" (
 ) ELSE (
   gradle %*
 )
-
 
 -----8<----- FILE: settings.gradle.kts -----8<-----
 
