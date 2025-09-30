@@ -11,27 +11,30 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen() {
-    val repos = LocalRepos.current
-    val ctx = LocalContext.current
-    val scope = rememberCoroutineScope()
+  val ctx = LocalContext.current
+  val repos = LocalRepos.get(ctx)
+  val scope = rememberCoroutineScope()
 
-    val currency by repos.currencyFlow.collectAsState(initial = "USD")
-    val daily by repos.dailyCaloriesFlow.collectAsState(initial = 2000)
+  val currency by repos.currencyFlow.collectAsState(initial = "USD")
+  val daily by repos.dailyCaloriesFlow.collectAsState(initial = 2000)
 
-    var currencyInput by remember(currency) { mutableStateOf(currency) }
-    var caloriesInput by remember(daily) { mutableStateOf(daily.toString()) }
+  var currencyInput by remember(currency) { mutableStateOf(currency) }
+  var caloriesInput by remember(daily) { mutableStateOf(daily.toString()) }
 
-    Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Text("Settings", style = MaterialTheme.typography.headlineMedium)
-        OutlinedTextField(value = currencyInput, onValueChange = { currencyInput = it }, label = { Text("Currency (e.g. USD, EUR)") })
-        OutlinedTextField(value = caloriesInput, onValueChange = { caloriesInput = it }, label = { Text("Daily Calories Target") })
-        Button(onClick = {
-            scope.launch {
-                repos.setCurrency(ctx, currencyInput.ifBlank { "USD" })
-                repos.setDailyCalories(ctx, caloriesInput.toIntOrNull() ?: 2000)
-                Toast.makeText(ctx, "Saved", Toast.LENGTH_SHORT).show()
-            }
-        }) { Text("Save") }
-        Text("Current: $currency • $daily kcal")
-    }
+  Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Text("Settings", style = MaterialTheme.typography.headlineMedium)
+
+    OutlinedTextField(value = currencyInput, onValueChange = { currencyInput = it }, label = { Text("Currency") })
+    OutlinedTextField(value = caloriesInput, onValueChange = { caloriesInput = it }, label = { Text("Daily Calories") })
+
+    Button(onClick = {
+      scope.launch {
+        repos.setCurrency(ctx, currencyInput.ifBlank { "USD" })
+        repos.setDailyCalories(ctx, caloriesInput.toIntOrNull() ?: 2000)
+        Toast.makeText(ctx, "Saved", Toast.LENGTH_SHORT).show()
+      }
+    }) { Text("Save") }
+
+    Text("Current: \$currency • \$daily kcal")
+  }
 }
