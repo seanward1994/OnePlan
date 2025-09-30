@@ -1,3 +1,4 @@
 <resources>
+    <!-- Uses Material Components XML theme so AAPT can find Theme.Material3.* -->
     <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
 </resources>

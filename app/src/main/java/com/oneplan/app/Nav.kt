@@ -1,27 +1,25 @@
 package com.oneplan.app
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.*
 
 @Composable
 fun OnePlanApp() {
     val nav = rememberNavController()
     Scaffold(
-        topBar = { TopAppBar(title = { Text("OnePlan") }) },
+        topBar = { TopAppBar(title = { Text("OnePlanAlpha") }) },
         bottomBar = { OnePlanBottomBar(nav) }
     ) { pad ->
-        NavHost(navController = nav, startDestination = "budget", modifier = Modifier.padding(pad)) {
+        NavHost(nav, startDestination = "budget", Modifier.padding(pad)) {
             composable("budget") { BudgetScreen() }
             composable("meals") { MealPlanScreen() }
             composable("settings") { SettingsScreen() }
@@ -33,25 +31,19 @@ fun OnePlanApp() {
 fun OnePlanBottomBar(nav: NavHostController) {
     data class Item(val route: String, val label: String, val icon: @Composable () -> Unit)
     val items = listOf(
-        Item("budget", "Budget", { Icon(Icons.Filled.Home, contentDescription = "Budget") }),
-        Item("meals", "Meals", { Icon(Icons.Filled.Restaurant, contentDescription = "Meals") }),
-        Item("settings", "Settings", { Icon(Icons.Filled.Settings, contentDescription = "Settings") }),
+        Item("budget", "Budget") { Icon(Icons.Filled.Home, null) },
+        Item("meals", "Meals") { Icon(Icons.Filled.Restaurant, null) },
+        Item("settings", "Settings") { Icon(Icons.Filled.Settings, null) },
     )
     NavigationBar {
         val current by nav.currentBackStackEntryAsState()
         val route = current?.destination?.route
-        items.forEach { item ->
+        items.forEach { i ->
             NavigationBarItem(
-                selected = route == item.route,
-                onClick = {
-                    nav.navigate(item.route) {
-                        popUpTo(nav.graph.startDestinationId) { saveState = true }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
-                label = { Text(item.label) },
-                icon = item.icon
+                selected = route == i.route,
+                onClick = { nav.navigate(i.route) { popUpTo(nav.graph.startDestinationId) { saveState = true }; launchSingleTop = true; restoreState = true } },
+                label = { Text(i.label) },
+                icon = i.icon
             )
         }
     }

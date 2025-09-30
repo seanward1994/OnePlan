@@ -1,5 +1,6 @@
 package com.oneplan.app
 
+import android.app.Application
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
@@ -8,30 +9,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun SettingsScreen() {
-    val repos = LocalRepos.current
+fun SettingsScreen(vm: SettingsViewModel = koinViewModel()) {
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    val currency by repos.currencyFlow.collectAsState(initial = "USD")
-    val daily by repos.dailyCaloriesFlow.collectAsState(initial = 2000)
-
-    var currencyInput by remember(currency) { mutableStateOf(currency) }
-    var caloriesInput by remember(daily) { mutableStateOf(daily.toString()) }
+    var currency by remember { mutableStateOf("USD") }
+    var daily by remember { mutableStateOf("2000") }
 
     Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text("Settings", style = MaterialTheme.typography.headlineMedium)
-        OutlinedTextField(value = currencyInput, onValueChange = { currencyInput = it }, label = { Text("Currency (e.g. USD, EUR)") })
-        OutlinedTextField(value = caloriesInput, onValueChange = { caloriesInput = it }, label = { Text("Daily Calories Target") })
+        OutlinedTextField(currency, { currency = it }, label = { Text("Currency (e.g. USD)") })
+        OutlinedTextField(daily, { daily = it }, label = { Text("Daily Calories") })
+
         Button(onClick = {
             scope.launch {
-                repos.setCurrency(ctx, currencyInput.ifBlank { "USD" })
-                repos.setDailyCalories(ctx, caloriesInput.toIntOrNull() ?: 2000)
+                vm.save(currency.ifBlank { "USD" }, daily.toIntOrNull() ?: 2000)
                 Toast.makeText(ctx, "Saved", Toast.LENGTH_SHORT).show()
             }
         }) { Text("Save") }
-        Text("Current: $currency • $daily kcal")
     }
 }

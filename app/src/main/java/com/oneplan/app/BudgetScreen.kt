@@ -7,23 +7,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun BudgetScreen() {
-    val repos = LocalRepos.current
+fun BudgetScreen(vm: BudgetViewModel = koinViewModel()) {
     val scope = rememberCoroutineScope()
-    var items by remember { mutableStateOf(listOf<BudgetItem>()) }
+    val items by vm.items.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { items = repos.budget.list() }
-    fun reload() = scope.launch { items = repos.budget.list() }
-
-    Scaffold(
-        floatingActionButton = { FloatingActionButton(onClick = { showAdd = true }) { Text("+") } }
-    ) { pad ->
+    Scaffold(floatingActionButton = { FloatingActionButton({ showAdd = true }) { Text("+") } }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             Text("Budget", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(12.dp))
@@ -33,11 +27,9 @@ fun BudgetScreen() {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(item.label, style = MaterialTheme.typography.titleMedium)
-                                Text(item.category, style = MaterialTheme.typography.bodySmall)
+                                Text("$" + "%.2f".format(item.amountCents / 100.0))
                             }
-                            Text("$${"%.2f".format(item.amountCents / 100.0)}")
-                            Spacer(Modifier.width(8.dp))
-                            OutlinedButton(onClick = { scope.launch { repos.budget.remove(item); reload() } }) { Text("Delete") }
+                            OutlinedButton(onClick = { scope.launch { vm.remove(item) } }) { Text("Delete") }
                         }
                     }
                 }
@@ -45,33 +37,31 @@ fun BudgetScreen() {
         }
     }
 
-    if (showAdd) AddBudgetDialog(
-        onDismiss = { showAdd = false },
-        onAdd = { label, cents, cat ->
-            scope.launch { repos.budget.add(BudgetItem(label = label, amountCents = cents, category = cat)); reload(); showAdd = false }
-        }
-    )
+    if (showAdd) {
+        AddBudgetDialog(
+            onDismiss = { showAdd = false },
+            onAdd = { label, cents -> scope.launch { vm.add(label, cents); showAdd = false } }
+        )
+    }
 }
 
 @Composable
-private fun AddBudgetDialog(onDismiss: () -> Unit, onAdd: (String, Long, String) -> Unit) {
-    var label by remember { mutableStateOf(TextFieldValue("")) }
-    var amount by remember { mutableStateOf(TextFieldValue("")) }
-    var category by remember { mutableStateOf(TextFieldValue("General")) }
+private fun AddBudgetDialog(onDismiss: () -> Unit, onAdd: (String, Long) -> Unit) {
+    var label by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Budget Item") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(label = { Text("Label") }, value = label, onValueChange = { label = it })
-                OutlinedTextField(label = { Text("Amount (e.g. 12.34)") }, value = amount, onValueChange = { amount = it })
-                OutlinedTextField(label = { Text("Category") }, value = category, onValueChange = { category = it })
+                OutlinedTextField(value = label, onValueChange = { label = it }, label = { Text("Label") })
+                OutlinedTextField(value = amount, onValueChange = { amount = it }, label = { Text("Amount (12.34)") })
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                val cents = ((amount.text.toDoubleOrNull() ?: 0.0) * 100).toLong()
-                onAdd(label.text.trim(), cents, category.text.trim().ifEmpty { "General" })
+                val cents = ((amount.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                onAdd(label.trim(), cents)
             }) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }

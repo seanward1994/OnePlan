@@ -7,21 +7,17 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import org.koin.androidx.compose.koinViewModel
 
 @Composable
-fun MealPlanScreen() {
-    val repos = LocalRepos.current
+fun MealPlanScreen(vm: MealViewModel = koinViewModel()) {
     val scope = rememberCoroutineScope()
-    var items by remember { mutableStateOf(listOf<Meal>()) }
+    val items by vm.items.collectAsState()
     var showAdd by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { items = repos.meals.list() }
-    fun reload() = scope.launch { items = repos.meals.list() }
-
-    Scaffold(floatingActionButton = { FloatingActionButton(onClick = { showAdd = true }) { Text("+") } }) { pad ->
+    Scaffold(floatingActionButton = { FloatingActionButton({ showAdd = true }) { Text("+") } }) { pad ->
         Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
             Text("Meals", style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(12.dp))
@@ -31,9 +27,9 @@ fun MealPlanScreen() {
                         Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
                             Column(Modifier.weight(1f)) {
                                 Text(item.title, style = MaterialTheme.typography.titleMedium)
-                                Text("${item.calories} kcal  ${item.day}", style = MaterialTheme.typTypography.bodySmall)
+                                Text("${item.calories} kcal  ${item.day}", style = MaterialTheme.typography.bodySmall)
                             }
-                            OutlinedButton(onClick = { scope.launch { repos.meals.remove(item); reload() } }) { Text("Delete") }
+                            OutlinedButton(onClick = { scope.launch { vm.remove(item) } }) { Text("Delete") }
                         }
                     }
                 }
@@ -41,29 +37,31 @@ fun MealPlanScreen() {
         }
     }
 
-    if (showAdd) AddMealDialog(
-        onDismiss = { showAdd = false },
-        onAdd = { title, kcal, day -> scope.launch { repos.meals.add(Meal(title = title, calories = kcal, day = day)); reload(); showAdd = false } }
-    )
+    if (showAdd) {
+        AddMealDialog(
+            onDismiss = { showAdd = false },
+            onAdd = { title, kcal, day -> scope.launch { vm.add(title, kcal, day); showAdd = false } }
+        )
+    }
 }
 
 @Composable
 private fun AddMealDialog(onDismiss: () -> Unit, onAdd: (String, Int, String) -> Unit) {
-    var title by remember { mutableStateOf(TextFieldValue("")) }
-    var calories by remember { mutableStateOf(TextFieldValue("")) }
-    var day by remember { mutableStateOf(TextFieldValue("")) }
+    var title by remember { mutableStateOf("") }
+    var calories by remember { mutableStateOf("") }
+    var day by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Add Meal") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                OutlinedTextField(label = { Text("Title") }, value = title, onValueChange = { title = it })
-                OutlinedTextField(label = { Text("Calories") }, value = calories, onValueChange = { calories = it })
-                OutlinedTextField(label = { Text("Day") }, value = day, onValueChange = { day = it })
+                OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Title") })
+                OutlinedTextField(value = calories, onValueChange = { calories = it }, label = { Text("Calories") })
+                OutlinedTextField(value = day, onValueChange = { day = it }, label = { Text("Day") })
             }
         },
         confirmButton = {
-            TextButton(onClick = { onAdd(title.text.trim(), calories.text.toIntOrNull() ?: 0, day.text.trim()) }) { Text("Add") }
+            TextButton(onClick = { onAdd(title.trim(), calories.toIntOrNull() ?: 0, day.trim()) }) { Text("Add") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
     )

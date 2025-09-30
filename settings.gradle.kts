@@ -1,3 +1,6 @@
+rootProject.name = "OnePlanAndroid"
+include(":app")
+
 pluginManagement {
     repositories {
         google()
@@ -5,12 +8,3 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-dependencyResolutionManagement {
-    repositoriesMode.set(RepositoriesMode.PREFER_PROJECT)
-    repositories {
-        google()
-        mavenCentral()
-    }
-}
-rootProject.name = "OnePlan"
-include(":app")

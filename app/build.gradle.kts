@@ -1,7 +1,7 @@
 plugins {
     id("com.android.application") version "8.5.2"
-    kotlin("android") version "1.9.23"
-    id("com.google.devtools.ksp") version "1.9.23-1.0.20"
+    kotlin("android") version "1.9.24"
+    id("com.google.devtools.ksp") version "1.9.24-1.0.20"
 }
 
 android {
@@ -12,11 +12,14 @@ android {
         applicationId = "com.oneplan.app"
         minSdk = 24
         targetSdk = 34
+
+        // CI can pass VC env; else read file; default 1
         val vc = (System.getenv("VC") ?: runCatching {
             file("${rootDir}/.oneplan_versioncode").takeIf { it.exists() }?.readText()?.trim()
         }.getOrNull() ?: "1").toInt()
         versionCode = vc
         versionName = "0.4.$vc"
+
         vectorDrawables { useSupportLibrary = true }
     }
 
@@ -29,7 +32,8 @@ android {
     }
 
     buildFeatures { compose = true }
-    composeOptions { kotlinCompilerExtensionVersion = "1.5.12" }
+    composeOptions { kotlinCompilerExtensionVersion = "1.5.14" }
+
     packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
 
     compileOptions {
@@ -40,33 +44,41 @@ android {
 }
 
 dependencies {
+    // --- Compose BOM ---
     val composeBom = platform("androidx.compose:compose-bom:2024.08.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
 
+    // Core / lifecycle
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
 
-    // Compose UI
+    // Compose UI + Material3
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Navigation-Compose
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    // ✅ Fix for XML theme `Theme.Material3.DayNight.NoActionBar`
+    // Material Components (owns the XML themes for Material3)
+    implementation("com.google.android.material:material:1.12.0")
+
+    // Navigation
+    implementation("androidx.navigation:navigation-compose:2.8.1")
 
     // DataStore (Preferences)
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Room (with KSP)
-    val room = "2.6.1"
-    implementation("androidx.room:room-runtime:$room")
-    implementation("androidx.room:room-ktx:$room")
-    ksp("androidx.room:room-compiler:$room")
+    // Room (KSP)
+    implementation("androidx.room:room-runtime:2.6.1")
+    implementation("androidx.room:room-ktx:2.6.1")
+    ksp("androidx.room:room-compiler:2.6.1")
 
-    // Test/debug
+    // Koin DI (lightweight, Compose-friendly)
+    implementation("io.insert-koin:koin-androidx-compose:3.5.6")
+
+    // Debug / test
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
