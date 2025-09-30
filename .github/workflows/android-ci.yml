@@ -1,47 +1,60 @@
 name: OnePlanAndroid — CI
-
 on:
   push:
-    branches: [ main ]
+    branches: [ main, refactor/** ]
   pull_request:
+    branches: [ main, refactor/** ]
   workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with: { fetch-depth: 1 }
 
-      - name: Set up JDK 17
+      - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
 
-      # Use hosted Gradle so we don't depend on ./gradlew or wrapper JAR
-      - name: Set up Gradle
+      - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.7'
-          cache-read-only: false
 
-      # Ensure AndroidX flags exist even if the file isn't in the repo
-      - name: Ensure gradle.properties
-        run: |
-          touch gradle.properties
-          grep -q '^android.useAndroidX=' gradle.properties || echo 'android.useAndroidX=true' >> gradle.properties
-          grep -q '^android.enableJetifier=' gradle.properties || echo 'android.enableJetifier=true' >> gradle.properties
-          grep -q '^org.gradle.jvmargs=' gradle.properties || echo 'org.gradle.jvmargs=-Xmx2048m -Dkotlin.daemon.jvm.options=-Xmx1024m' >> gradle.properties
+      - name: Bump versionCode from file
+        run: echo "VC=$(cat .oneplan_versioncode)" >> $GITHUB_ENV
 
       - name: Build debug APK
-        run: gradle --no-daemon --stacktrace assembleDebug
+        run: gradle --no-daemon --stacktrace :app:assembleDebug
 
-      - name: Upload Debug APKs
+      - name: Upload APK(s)
         uses: actions/upload-artifact@v4
         with:
           name: oneplan-debug-apks
-          path: '**/build/outputs/apk/debug/*.apk'
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
 
+      - name: Generate FULL_CODE_DUMP.txt
+        run: |
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($(date -u +%Y-%m-%dT%H:%M:%SZ))" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.keystore' ':!**/*.jks' \
+          | while read -r f; do
+              echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+              sed -n '1,4000p' "$f" >> "$OUT" || true
+            done
+          echo "Generated $OUT"
 
+      - name: Upload FULL_CODE_DUMP
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP
+          path: FULL_CODE_DUMP.txt
+          if-no-files-found: error
