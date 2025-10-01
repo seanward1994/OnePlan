@@ -1,0 +1,845 @@
+name: One-Click: Nuke → Rebuild → Build APK
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write   # allow commits/pushes by GITHUB_TOKEN
+  actions: read
+  id-token: write
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (full)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set git identity
+        run: |
+          git config user.name "oneclick-bot"
+          git config user.email "oneclick-bot@users.noreply.github.com"
+
+      - name: Backup current tree
+        id: backup
+        run: |
+          B="backup/pre-nuke-$(date -u +%Y%m%dT%H%M%SZ)"
+          git checkout -B "$B"
+          git push -u origin "$B"
+          echo "backup=$B" >> $GITHUB_OUTPUT
+
+      - name: Switch to target branch
+        run: |
+          SAFE_BRANCH="${SAFE_BRANCH:-refactor/v1}"
+          git checkout -B "$SAFE_BRANCH"
+          echo "SAFE_BRANCH=$SAFE_BRANCH" >> $GITHUB_ENV
+
+      - name: Nuke repository contents (keep .git)
+        run: |
+          ls -A1 | grep -v -E '^\.git$' | xargs -I{} rm -rf "{}" || true
+          mkdir -p app/src/main/java app/src/main/res/{values,xml,drawable,mipmap-anydpi-v26} .github/workflows
+
+      - name: Scaffold fresh Android app (Compose M3 + Hilt + Room + Retrofit + WorkManager)
+        env:
+          APP_ID: com.oneplan.app
+          APP_NAME: OnePlan
+          VC_FILE: .oneplan_versioncode
+          AGP_VER: 8.7.2
+          KOTLIN_VER: 1.9.23
+          COMPOSE_BOM: 2024.08.00
+          COMPOSE_COMPILER_EXT: 1.5.12
+          MDC_VER: 1.12.0
+          LIFECYCLE_VER: 2.8.5
+          ACTIVITY_COMPOSE_VER: 1.9.2
+          NAV_COMPOSE_VER: 2.8.0
+          ROOM_VER: 2.6.1
+          HILT_VER: 2.51.1
+          WORK_VER: 2.9.1
+          OKHTTP_VER: 4.12.0
+          RETROFIT_VER: 2.11.0
+          JUNIT_VER: 4.13.2
+        shell: bash
+        run: |
+          set -euo pipefail
+          VC=$(test -f "$VC_FILE" && tr -dc '0-9' < "$VC_FILE" || echo 1)
+
+          # settings.gradle.kts
+          cat > settings.gradle.kts <<'KTS'
+          pluginManagement {
+              repositories {
+                  google()
+                  mavenCentral()
+                  gradlePluginPortal()
+              }
+          }
+          dependencyResolutionManagement {
+              repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "OnePlan"
+          include(":app")
+          KTS
+
+          # build.gradle.kts (root)
+          cat > build.gradle.kts <<'KTS'
+          allprojects {
+              repositories {
+                  google()
+                  mavenCentral()
+              }
+          }
+          KTS
+
+          # gradle.properties
+          cat > gradle.properties <<'PROPS'
+          org.gradle.jvmargs=-Xmx3g -Dfile.encoding=UTF-8
+          android.useAndroidX=true
+          kotlin.code.style=official
+          org.gradle.warning.mode=all
+          PROPS
+
+          # app/build.gradle.kts
+          cat > app/build.gradle.kts <<KTS
+          plugins {
+              id("com.android.application") version "${AGP_VER}"
+              kotlin("android") version "${KOTLIN_VER}"
+              id("com.google.devtools.ksp") version "1.9.23-1.0.20"
+              id("com.google.dagger.hilt.android") version "${HILT_VER}"
+          }
+
+          android {
+              namespace = "${APP_ID}"
+              compileSdk = 34
+
+              defaultConfig {
+                  applicationId = "${APP_ID}"
+                  minSdk = 24
+                  targetSdk = 34
+
+                  val vc = (System.getenv("VC") ?: runCatching {
+                      file("${'$'}{rootDir}/${VC_FILE}").takeIf { it.exists() }?.readText()?.trim()
+                  }.getOrNull() ?: "${VC}").toInt()
+                  versionCode = vc
+                  versionName = "0.3.${'$'}vc"
+
+                  vectorDrawables { useSupportLibrary = true }
+              }
+
+              buildTypes {
+                  release {
+                      isMinifyEnabled = false
+                      proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+                  }
+                  debug { isDebuggable = true }
+              }
+
+              buildFeatures { compose = true }
+              composeOptions { kotlinCompilerExtensionVersion = "${COMPOSE_COMPILER_EXT}" }
+
+              packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
+
+              compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions { jvmTarget = "17" }
+          }
+
+          dependencies {
+              val composeBom = platform("androidx.compose:compose-bom:${COMPOSE_BOM}")
+              implementation(composeBom); androidTestImplementation(composeBom)
+
+              implementation("androidx.core:core-ktx:1.13.1")
+              implementation("androidx.activity:activity-compose:${ACTIVITY_COMPOSE_VER}")
+              implementation("androidx.lifecycle:lifecycle-runtime-ktx:${LIFECYCLE_VER}")
+
+              implementation("androidx.compose.ui:ui")
+              implementation("androidx.compose.ui:ui-tooling-preview")
+              implementation("androidx.compose.material3:material3")
+              implementation("androidx.compose.material:material-icons-extended")
+              implementation("androidx.navigation:navigation-compose:${NAV_COMPOSE_VER}")
+              debugImplementation("androidx.compose.ui:ui-tooling")
+              debugImplementation("androidx.compose.ui:ui-test-manifest")
+
+              // Material Components (XML theme support for Theme.Material3.*)
+              implementation("com.google.android.material:material:${MDC_VER}")
+
+              // Hilt DI
+              implementation("com.google.dagger:hilt-android:${HILT_VER}")
+              ksp("com.google.dagger:hilt-compiler:${HILT_VER}")
+
+              // Room + KSP
+              implementation("androidx.room:room-runtime:${ROOM_VER}")
+              implementation("androidx.room:room-ktx:${ROOM_VER}")
+              ksp("androidx.room:room-compiler:${ROOM_VER}")
+
+              // DataStore
+              implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+              // WorkManager
+              implementation("androidx.work:work-runtime-ktx:${WORK_VER}")
+
+              // Network
+              implementation("com.squareup.okhttp3:okhttp:${OKHTTP_VER}")
+              implementation("com.squareup.okhttp3:logging-interceptor:${OKHTTP_VER}")
+              implementation("com.squareup.retrofit2:retrofit:${RETROFIT_VER}")
+              implementation("com.squareup.retrofit2:converter-moshi:${RETROFIT_VER}")
+              implementation("com.squareup.moshi:moshi-kotlin:1.15.1")
+
+              testImplementation("junit:junit:${JUNIT_VER}")
+              androidTestImplementation("androidx.test.ext:junit:1.2.1")
+              androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
+              androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+          }
+          KTS
+
+          # proguard
+          echo "# (empty)" > app/proguard-rules.pro
+
+          # AndroidManifest
+          cat > app/src/main/AndroidManifest.xml <<XML
+          <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+              <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+              <application
+                  android:name=".OnePlanApp"
+                  android:label="${APP_NAME}"
+                  android:icon="@mipmap/ic_launcher"
+                  android:roundIcon="@mipmap/ic_launcher_round"
+                  android:theme="@style/Theme.OnePlan">
+                  <activity
+                      android:name="${APP_ID}.MainActivity"
+                      android:exported="true">
+                      <intent-filter>
+                          <action android:name="android.intent.action.MAIN"/>
+                          <category android:name="android.intent.category.LAUNCHER"/>
+                      </intent-filter>
+                  </activity>
+              </application>
+          </manifest>
+          XML
+
+          # Theme + colors
+          cat > app/src/main/res/values/themes.xml <<'XML'
+          <resources>
+              <style name="Theme.OnePlan" parent="Theme.Material3.DayNight.NoActionBar"/>
+          </resources>
+          XML
+
+          cat > app/src/main/res/values/colors.xml <<'XML'
+          <resources>
+              <color name="oneplan_primary">#2F80ED</color>
+          </resources>
+          XML
+
+          # Icons
+          cat > app/src/main/res/drawable/ic_launcher_foreground.xml <<'XML'
+          <vector xmlns:android="http://schemas.android.com/apk/res/android"
+              android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
+              <path android:fillColor="#2F80ED" android:pathData="M0,0h108v108h-108z"/>
+              <path android:fillColor="#FFFFFF" android:pathData="M24,54h60v8h-60z"/>
+              <path android:fillColor="#FFFFFF" android:pathData="M24,70h40v8h-40z"/>
+          </vector>
+          XML
+
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml <<'XML'
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@android:color/white"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          XML
+
+          cat > app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml <<'XML'
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@android:color/white"/>
+              <foreground android:drawable="@drawable/ic_launcher_foreground"/>
+          </adaptive-icon>
+          XML
+
+          PKG_DIR="app/src/main/java/$(echo "${APP_ID}" | tr '.' '/')"
+          mkdir -p "$PKG_DIR"
+
+          # App class (Hilt + Notification channel)
+          cat > "$PKG_DIR/OnePlanApp.kt" <<'KT'
+          package com.oneplan.app
+
+          import android.app.Application
+          import android.app.NotificationChannel
+          import android.app.NotificationManager
+          import android.os.Build
+          import dagger.hilt.android.HiltAndroidApp
+
+          @HiltAndroidApp
+          class OnePlanApp : Application() {
+              override fun onCreate() {
+                  super.onCreate()
+                  if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                      val channel = NotificationChannel(
+                          "oneplan_default",
+                          "OnePlan Notifications",
+                          NotificationManager.IMPORTANCE_DEFAULT
+                      )
+                      val nm = getSystemService(NotificationManager::class.java)
+                      nm.createNotificationChannel(channel)
+                  }
+              }
+          }
+          KT
+
+          # Theme
+          cat > "$PKG_DIR/Theme.kt" <<'KT'
+          package com.oneplan.app
+
+          import androidx.compose.material3.MaterialTheme
+          import androidx.compose.material3.lightColorScheme
+          import androidx.compose.runtime.Composable
+
+          private val Colors = lightColorScheme()
+
+          @Composable
+          fun OnePlanTheme(content: @Composable () -> Unit) {
+              MaterialTheme(colorScheme = Colors, content = content)
+          }
+          KT
+
+          # DI module + Repos (Hilt, Retrofit, Room, DataStore)
+          cat > "$PKG_DIR/di.kt" <<'KT'
+          package com.oneplan.app
+
+          import android.content.Context
+          import androidx.datastore.preferences.core.edit
+          import androidx.datastore.preferences.core.intPreferencesKey
+          import androidx.datastore.preferences.core.stringPreferencesKey
+          import androidx.datastore.preferences.preferencesDataStore
+          import androidx.room.Room
+          import com.squareup.moshi.Moshi
+          import okhttp3.OkHttpClient
+          import okhttp3.logging.HttpLoggingInterceptor
+          import retrofit2.Retrofit
+          import retrofit2.converter.moshi.MoshiConverterFactory
+          import dagger.Module
+          import dagger.Provides
+          import dagger.hilt.InstallIn
+          import dagger.hilt.android.qualifiers.ApplicationContext
+          import dagger.hilt.components.SingletonComponent
+          import kotlinx.coroutines.flow.Flow
+          import kotlinx.coroutines.flow.map
+          import javax.inject.Singleton
+
+          val Context.dataStore by preferencesDataStore("oneplan_prefs")
+
+          @Module
+          @InstallIn(SingletonComponent::class)
+          object AppModule {
+
+              @Provides @Singleton
+              fun provideDb(@ApplicationContext app: Context): OnePlanDb =
+                  Room.databaseBuilder(app, OnePlanDb::class.java, "oneplan.db")
+                      .fallbackToDestructiveMigration()
+                      .build()
+
+              @Provides fun provideBudgetDao(db: OnePlanDb) = db.budget()
+              @Provides fun provideMealDao(db: OnePlanDb) = db.meals()
+
+              @Provides @Singleton
+              fun provideOkHttp(): OkHttpClient =
+                  OkHttpClient.Builder()
+                      .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
+                      .build()
+
+              @Provides @Singleton
+              fun provideRetrofit(client: OkHttpClient): Retrofit =
+                  Retrofit.Builder()
+                      .baseUrl("https://example.com/") // placeholder
+                      .addConverterFactory(MoshiConverterFactory.create(Moshi.Builder().build()))
+                      .client(client)
+                      .build()
+          }
+
+          class Repos(private val context: Context, val budget: BudgetDao, val meals: MealDao) {
+              private val currencyKey = stringPreferencesKey("currency")
+              private val caloriesKey = intPreferencesKey("daily_calories")
+
+              val currencyFlow: Flow<String> = context.dataStore.data.map { it[currencyKey] ?: "USD" }
+              val dailyCaloriesFlow: Flow<Int> = context.dataStore.data.map { it[caloriesKey] ?: 2000 }
+
+              suspend fun setCurrency(value: String) { context.dataStore.edit { it[currencyKey] = value } }
+              suspend fun setDailyCalories(value: Int) { context.dataStore.edit { it[caloriesKey] = value } }
+          }
+          KT
+
+          # Room
+          cat > "$PKG_DIR/data.kt" <<'KT'
+          package com.oneplan.app
+
+          import androidx.room.*
+
+          @Entity(tableName = "budget_items")
+          data class BudgetItem(
+              @PrimaryKey(autoGenerate = true) val id: Long = 0,
+              val label: String,
+              val amountCents: Long,
+              val category: String = "General",
+              val timestamp: Long = System.currentTimeMillis()
+          )
+
+          @Entity(tableName = "meals")
+          data class Meal(
+              @PrimaryKey(autoGenerate = true) val id: Long = 0,
+              val title: String,
+              val calories: Int = 0,
+              val day: String = ""
+          )
+
+          @Dao
+          interface BudgetDao {
+              @Query("SELECT * FROM budget_items ORDER BY timestamp DESC")
+              suspend fun list(): List<BudgetItem>
+              @Insert suspend fun add(item: BudgetItem)
+              @Delete suspend fun remove(item: BudgetItem)
+          }
+
+          @Dao
+          interface MealDao {
+              @Query("SELECT * FROM meals ORDER BY id DESC")
+              suspend fun list(): List<Meal>
+              @Insert suspend fun add(meal: Meal)
+              @Delete suspend fun remove(meal: Meal)
+          }
+
+          @Database(entities = [BudgetItem::class, Meal::class], version = 1)
+          abstract class OnePlanDb : RoomDatabase() {
+              abstract fun budget(): BudgetDao
+              abstract fun meals(): MealDao
+          }
+          KT
+
+          # WorkManager worker (daily reminder)
+          cat > "$PKG_DIR/DailyReminderWorker.kt" <<'KT'
+          package com.oneplan.app
+
+          import android.content.Context
+          import androidx.hilt.work.HiltWorker
+          import androidx.work.CoroutineWorker
+          import androidx.work.WorkerParameters
+          import dagger.assisted.Assisted
+          import dagger.assisted.AssistedInject
+          import androidx.core.app.NotificationCompat
+          import androidx.core.app.NotificationManagerCompat
+
+          @HiltWorker
+          class DailyReminderWorker @AssistedInject constructor(
+              @Assisted appContext: Context,
+              @Assisted params: WorkerParameters
+          ) : CoroutineWorker(appContext, params) {
+              override suspend fun doWork(): Result {
+                  val notif = NotificationCompat.Builder(applicationContext, "oneplan_default")
+                      .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                      .setContentTitle("OnePlan")
+                      .setContentText("Don’t forget to review today’s budget & meals.")
+                      .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                      .build()
+                  NotificationManagerCompat.from(applicationContext).notify(1001, notif)
+                  return Result.success()
+              }
+          }
+          KT
+
+          # ViewModel
+          cat > "$PKG_DIR/OnePlanViewModel.kt" <<'KT'
+          package com.oneplan.app
+
+          import androidx.lifecycle.ViewModel
+          import androidx.lifecycle.viewModelScope
+          import dagger.hilt.android.lifecycle.HiltViewModel
+          import kotlinx.coroutines.flow.MutableStateFlow
+          import kotlinx.coroutines.flow.SharingStarted
+          import kotlinx.coroutines.flow.stateIn
+          import kotlinx.coroutines.launch
+          import javax.inject.Inject
+          import android.app.Application
+
+          @HiltViewModel
+          class OnePlanViewModel @Inject constructor(
+              private val app: Application,
+              private val budgetDao: BudgetDao,
+              private val mealDao: MealDao
+          ) : ViewModel() {
+
+              private val repos by lazy { Repos(app, budgetDao, mealDao) }
+
+              val budgetItems = MutableStateFlow<List<BudgetItem>>(emptyList())
+              val meals = MutableStateFlow<List<Meal>>(emptyList())
+              val currency = repos.currencyFlow.stateIn(viewModelScope, SharingStarted.Lazily, "USD")
+              val dailyCalories = repos.dailyCaloriesFlow.stateIn(viewModelScope, SharingStarted.Lazily, 2000)
+
+              init { refresh() }
+
+              fun refresh() = viewModelScope.launch {
+                  budgetItems.value = budgetDao.list()
+                  meals.value = mealDao.list()
+              }
+
+              fun addBudget(label: String, cents: Long, category: String) = viewModelScope.launch {
+                  budgetDao.add(BudgetItem(label = label, amountCents = cents, category = category))
+                  refresh()
+              }
+              fun deleteBudget(item: BudgetItem) = viewModelScope.launch { budgetDao.remove(item); refresh() }
+
+              fun addMeal(title: String, kcal: Int, day: String) = viewModelScope.launch {
+                  mealDao.add(Meal(title = title, calories = kcal, day = day))
+                  refresh()
+              }
+              fun deleteMeal(meal: Meal) = viewModelScope.launch { mealDao.remove(meal); refresh() }
+
+              fun saveSettings(currency: String, daily: Int) = viewModelScope.launch {
+                  repos.setCurrency(currency)
+                  repos.setDailyCalories(daily)
+              }
+          }
+          KT
+
+          # UI: MainActivity + Nav + 3 screens
+          cat > "$PKG_DIR/MainActivity.kt" <<'KT'
+          package com.oneplan.app
+
+          import android.os.Bundle
+          import androidx.activity.ComponentActivity
+          import androidx.activity.compose.setContent
+          import dagger.hilt.android.AndroidEntryPoint
+          import androidx.work.PeriodicWorkRequestBuilder
+          import androidx.work.WorkManager
+          import java.util.concurrent.TimeUnit
+
+          @AndroidEntryPoint
+          class MainActivity : ComponentActivity() {
+              override fun onCreate(savedInstanceState: Bundle?) {
+                  super.onCreate(savedInstanceState)
+                  val req = PeriodicWorkRequestBuilder<DailyReminderWorker>(24, TimeUnit.HOURS).build()
+                  WorkManager.getInstance(this).enqueue(req)
+                  setContent { OnePlanApp() }
+              }
+          }
+          KT
+
+          cat > "$PKG_DIR/Nav.kt" <<'KT'
+          package com.oneplan.app
+
+          import androidx.compose.foundation.layout.padding
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Modifier
+          import androidx.navigation.NavHostController
+          import androidx.navigation.compose.*
+
+          import androidx.compose.material.icons.Icons
+          import androidx.compose.material.icons.filled.Home
+          import androidx.compose.material.icons.filled.Restaurant
+          import androidx.compose.material.icons.filled.Settings
+
+          @Composable
+          fun OnePlanApp() {
+              OnePlanTheme {
+                  val nav = rememberNavController()
+                  Scaffold(
+                      topBar = { TopAppBar(title = { Text("OnePlan") }) },
+                      bottomBar = { OnePlanBottomBar(nav) }
+                  ) { pad ->
+                      NavHost(navController = nav, startDestination = "budget", modifier = Modifier.padding(pad)) {
+                          composable("budget") { BudgetScreen() }
+                          composable("meals") { MealPlanScreen() }
+                          composable("settings") { SettingsScreen() }
+                      }
+                  }
+              }
+          }
+
+          @Composable
+          fun OnePlanBottomBar(nav: NavHostController) {
+              data class Item(val route: String, val label: String, val icon: @Composable () -> Unit)
+              val items = listOf(
+                  Item("budget", "Budget", { Icon(Icons.Filled.Home, contentDescription = null) }),
+                  Item("meals", "Meals", { Icon(Icons.Filled.Restaurant, contentDescription = null) }),
+                  Item("settings", "Settings", { Icon(Icons.Filled.Settings, contentDescription = null) }),
+              )
+              val current by nav.currentBackStackEntryAsState()
+              val route = current?.destination?.route
+              NavigationBar {
+                  items.forEach { item ->
+                      NavigationBarItem(
+                          selected = route == item.route,
+                          onClick = {
+                              nav.navigate(item.route) {
+                                  popUpTo(nav.graph.startDestinationId) { saveState = true }
+                                  launchSingleTop = true
+                                  restoreState = true
+                              }
+                          },
+                          label = { Text(item.label) },
+                          icon = item.icon
+                      )
+                  }
+              }
+          }
+          KT
+
+          cat > "$PKG_DIR/BudgetScreen.kt" <<'KT'
+          package com.oneplan.app
+
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.lazy.LazyColumn
+          import androidx.compose.foundation.lazy.items
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.text.input.TextFieldValue
+          import androidx.compose.ui.unit.dp
+          import androidx.hilt.navigation.compose.hiltViewModel
+          import kotlinx.coroutines.launch
+
+          @Composable
+          fun BudgetScreen() {
+              val vm = hiltViewModel<OnePlanViewModel>()
+              val scope = rememberCoroutineScope()
+              val items by vm.budgetItems.collectAsState()
+              var showAdd by remember { mutableStateOf(false) }
+
+              Scaffold(floatingActionButton = { FloatingActionButton({ showAdd = true }) { Text("+") } }) { pad ->
+                  Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
+                      Text("Budget", style = MaterialTheme.typography.headlineMedium)
+                      Spacer(Modifier.height(12.dp))
+                      LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                          items(items) { item ->
+                              Card {
+                                  Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                      Column(Modifier.weight(1f)) {
+                                          Text(item.label, style = MaterialTheme.typography.titleMedium)
+                                          Text(item.category, style = MaterialTheme.typography.bodySmall)
+                                      }
+                                      Text("$${"%.2f".format(item.amountCents / 100.0)}")
+                                      Spacer(Modifier.width(8.dp))
+                                      OutlinedButton(onClick = { scope.launch { vm.deleteBudget(item) } }) { Text("Delete") }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+
+              if (showAdd) AddBudgetDialog(
+                  onDismiss = { showAdd = false },
+                  onAdd = { label, cents, cat -> scope.launch { vm.addBudget(label, cents, cat); showAdd = false } }
+              )
+          }
+
+          @Composable
+          private fun AddBudgetDialog(onDismiss: () -> Unit, onAdd: (String, Long, String) -> Unit) {
+              var label by remember { mutableStateOf(TextFieldValue("")) }
+              var amount by remember { mutableStateOf(TextFieldValue("")) }
+              var category by remember { mutableStateOf(TextFieldValue("General")) }
+              AlertDialog(
+                  onDismissRequest = onDismiss,
+                  title = { Text("Add Budget Item") },
+                  text = {
+                      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                          OutlinedTextField(label = { Text("Label") }, value = label, onValueChange = { label = it })
+                          OutlinedTextField(label = { Text("Amount (e.g. 12.34)") }, value = amount, onValueChange = { amount = it })
+                          OutlinedTextField(label = { Text("Category") }, value = category, onValueChange = { category = it })
+                      }
+                  },
+                  confirmButton = {
+                      TextButton(onClick = {
+                          val cents = ((amount.text.toDoubleOrNull() ?: 0.0) * 100).toLong()
+                          onAdd(label.text.trim(), cents, category.text.trim().ifEmpty { "General" })
+                      }) { Text("Add") }
+                  },
+                  dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+              )
+          }
+          KT
+
+          cat > "$PKG_DIR/MealPlanScreen.kt" <<'KT'
+          package com.oneplan.app
+
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.foundation.lazy.LazyColumn
+          import androidx.compose.foundation.lazy.items
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Alignment
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.text.input.TextFieldValue
+          import androidx.compose.ui.unit.dp
+          import androidx.hilt.navigation.compose.hiltViewModel
+          import kotlinx.coroutines.launch
+
+          @Composable
+          fun MealPlanScreen() {
+              val vm = hiltViewModel<OnePlanViewModel>()
+              val scope = rememberCoroutineScope()
+              val items by vm.meals.collectAsState()
+              var showAdd by remember { mutableStateOf(false) }
+
+              Scaffold(floatingActionButton = { FloatingActionButton({ showAdd = true }) { Text("+") } }) { pad ->
+                  Column(Modifier.fillMaxSize().padding(pad).padding(16.dp)) {
+                      Text("Meals", style = MaterialTheme.typography.headlineMedium)
+                      Spacer(Modifier.height(12.dp))
+                      LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                          items(items) { item ->
+                              Card {
+                                  Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                                      Column(Modifier.weight(1f)) {
+                                          Text(item.title, style = MaterialTheme.typography.titleMedium)
+                                          Text("${'$'}{item.calories} kcal  ${'$'}{item.day}", style = MaterialTheme.typography.bodySmall)
+                                      }
+                                      OutlinedButton(onClick = { scope.launch { vm.deleteMeal(item) } }) { Text("Delete") }
+                                  }
+                              }
+                          }
+                      }
+                  }
+              }
+
+              if (showAdd) AddMealDialog(
+                  onDismiss = { showAdd = false },
+                  onAdd = { title, kcal, day -> scope.launch { vm.addMeal(title, kcal, day); showAdd = false } }
+              )
+          }
+
+          @Composable
+          private fun AddMealDialog(onDismiss: () -> Unit, onAdd: (String, Int, String) -> Unit) {
+              var title by remember { mutableStateOf(TextFieldValue("")) }
+              var calories by remember { mutableStateOf(TextFieldValue("")) }
+              var day by remember { mutableStateOf(TextFieldValue("")) }
+              AlertDialog(
+                  onDismissRequest = onDismiss,
+                  title = { Text("Add Meal") },
+                  text = {
+                      Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                          OutlinedTextField(label = { Text("Title") }, value = title, onValueChange = { title = it })
+                          OutlinedTextField(label = { Text("Calories") }, value = calories, onValueChange = { calories = it })
+                          OutlinedTextField(label = { Text("Day") }, value = day, onValueChange = { day = it })
+                      }
+                  },
+                  confirmButton = { TextButton(onClick = { onAdd(title.text.trim(), calories.text.toIntOrNull() ?: 0, day.text.trim()) }) { Text("Add") } },
+                  dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }
+              )
+          }
+          KT
+
+          cat > "$PKG_DIR/SettingsScreen.kt" <<'KT'
+          package com.oneplan.app
+
+          import android.widget.Toast
+          import androidx.compose.foundation.layout.*
+          import androidx.compose.material3.*
+          import androidx.compose.runtime.*
+          import androidx.compose.ui.Modifier
+          import androidx.compose.ui.platform.LocalContext
+          import androidx.compose.ui.unit.dp
+          import androidx.hilt.navigation.compose.hiltViewModel
+          import kotlinx.coroutines.launch
+
+          @Composable
+          fun SettingsScreen() {
+              val vm = hiltViewModel<OnePlanViewModel>()
+              val ctx = LocalContext.current
+              val scope = rememberCoroutineScope()
+
+              val currency by vm.currency.collectAsState()
+              val daily by vm.dailyCalories.collectAsState()
+
+              var currencyInput by remember(currency) { mutableStateOf(currency) }
+              var caloriesInput by remember(daily) { mutableStateOf(daily.toString()) }
+
+              Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                  Text("Settings", style = MaterialTheme.typography.headlineMedium)
+                  OutlinedTextField(value = currencyInput, onValueChange = { currencyInput = it }, label = { Text("Currency") })
+                  OutlinedTextField(value = caloriesInput, onValueChange = { caloriesInput = it }, label = { Text("Daily Calories") })
+                  Button(onClick = {
+                      scope.launch {
+                          vm.saveSettings(currencyInput.ifBlank { "USD" }, caloriesInput.toIntOrNull() ?: 2000)
+                          Toast.makeText(ctx, "Saved", Toast.LENGTH_SHORT).show()
+                      }
+                  }) { Text("Save") }
+                  Text("Current: ${'$'}currency • ${'$'}daily kcal")
+              }
+          }
+          KT
+
+          # bump versionCode so CI artifacts change
+          echo $(( VC + 1 )) > "$VC_FILE"
+
+      - name: Commit & push rebuilt app
+        run: |
+          git add -A
+          git commit -m "oneclick: nuke+rebuild (Compose M3 + Hilt + Room + Retrofit + WorkManager + CI + dumps)"
+          git push
+
+  build:
+    needs: rebuild
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (rebuilt)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Gradle cache
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Generate Gradle wrapper 8.7
+        run: |
+          gradle --no-daemon wrapper --gradle-version 8.7
+          chmod +x gradlew
+
+      - name: Build Debug APK
+        run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
+
+      - name: FULL_CODE_DUMP (always)
+        if: always()
+        run: |
+          TS="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          OUT="FULL_CODE_DUMP.txt"
+          echo "# OnePlan — full source dump ($TS)" > "$OUT"
+          echo >> "$OUT"
+          echo "## File list" >> "$OUT"
+          git ls-files | sort >> "$OUT"
+          echo >> "$OUT"
+          echo "## Sources" >> "$OUT"
+          git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' ':!**/*.jar' |
+            while read -r f; do
+              echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
+              sed -n '1,4000p' "$f" >> "$OUT" || true
+            done
+          mkdir -p build_logs
+          (test -f build/reports/problems/problems-report.html && cp build/reports/problems/problems-report.html build_logs/ || true)
+          (test -d app/build/outputs/apk/debug && ls -l app/build/outputs/apk/debug/ > build_logs/apk_listing.txt || true)
+
+      - name: Upload APK(s)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: oneplan-debug-apks
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+
+      - name: Upload FULL_CODE_DUMP + logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: FULL_CODE_DUMP_and_logs
+          path: |
+            FULL_CODE_DUMP.txt
+            build_logs/**
