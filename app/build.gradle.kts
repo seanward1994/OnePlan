@@ -3,26 +3,20 @@ plugins {
     kotlin("android") version "1.9.23"
     id("com.google.devtools.ksp") version "1.9.23-1.0.20"
 }
-
 android {
     namespace = "com.oneplan.app"
     compileSdk = 34
-
     defaultConfig {
         applicationId = "com.oneplan.app"
         minSdk = 24
         targetSdk = 34
-
-        // versionCode from env VC or .oneplan_versioncode
         val vc = (System.getenv("VC") ?: runCatching {
             file("${rootDir}/.oneplan_versioncode").takeIf { it.exists() }?.readText()?.trim()
-        }.getOrNull() ?: "13").toInt()
+        }.getOrNull() ?: "14").toInt()
         versionCode = vc
         versionName = "0.3.$vc"
-
         vectorDrawables { useSupportLibrary = true }
     }
-
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -30,30 +24,23 @@ android {
         }
         debug { isDebuggable = true }
     }
-
     buildFeatures { compose = true }
     composeOptions { kotlinCompilerExtensionVersion = "1.5.12" }
-
-    packaging {
-        resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" }
-    }
-
+    packaging { resources { excludes += "/META-INF/{AL2.0,LGPL2.1}" } }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
 }
-
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.08.00")
-    implementation(composeBom); androidTestImplementation(composeBom)
+    val bom = platform("androidx.compose:compose-bom:2024.08.00")
+    implementation(bom); androidTestImplementation(bom)
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.2")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.5")
 
-    // Compose
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
@@ -62,10 +49,13 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
-    // Material Components (XML themes) — REQUIRED for Theme.Material3.DayNight.NoActionBar
+    // REQUIRED: brings Theme.Material3.* for XML themes
     implementation("com.google.android.material:material:1.12.0")
 
-    // Room (optional but kept; uses KSP)
+    // DataStore (your code uses preferencesDataStore)
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Room (you use Room entities/daos)
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")
     ksp("androidx.room:room-compiler:2.6.1")

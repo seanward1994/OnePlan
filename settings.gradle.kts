@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "OnePlanMegaAlpha"
+rootProject.name = "OnePlan"
 include(":app")

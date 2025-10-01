@@ -1,37 +1,22 @@
 name: OnePlanAndroid — CI
 on:
-  push:
-    branches: [ main, refactor/v1 ]
-  pull_request:
-    branches: [ main, refactor/v1 ]
+  push: { branches: [ main, refactor/v1 ] }
+  pull_request: { branches: [ main, refactor/v1 ] }
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with: { fetch-depth: 1 }
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Gradle cache
-        uses: gradle/actions/setup-gradle@v3
-
+      - uses: actions/setup-java@v4
+        with: { distribution: temurin, java-version: '17' }
+      - uses: gradle/actions/setup-gradle@v3
       - name: Generate Gradle wrapper (8.7)
         run: gradle --no-daemon wrapper --gradle-version 8.7
-
       - name: Build Debug APK
-        id: build
         run: ./gradlew --no-daemon --stacktrace :app:assembleDebug
-
-      # Always dump code/logs, even if build failed
-      - name: Write FULL_CODE_DUMP.txt (always)
+      - name: FULL_CODE_DUMP (always)
         if: always()
         run: |
           TS="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
@@ -47,22 +32,17 @@ jobs:
               echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
               sed -n '1,4000p' "$f" >> "$OUT" || true
             done
-          # Also capture Gradle build scan-ish logs
           mkdir -p build_logs
           (test -f build/reports/problems/problems-report.html && cp build/reports/problems/problems-report.html build_logs/ || true)
           (test -d app/build/outputs/apk/debug && ls -l app/build/outputs/apk/debug/ > build_logs/apk_listing.txt || true)
-      
-      - name: Upload APK(s)
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: oneplan-debug-apks
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: warn
-
-      - name: Upload FULL_CODE_DUMP + logs
+      - uses: actions/upload-artifact@v4
         if: always()
-        uses: actions/upload-artifact@v4
         with:
           name: FULL_CODE_DUMP_and_logs
           path: |

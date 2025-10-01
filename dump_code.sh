@@ -13,4 +13,4 @@ git ls-files ':!**/*.png' ':!**/*.jpg' ':!**/*.jpeg' ':!**/*.webp' ':!**/*.gif' 
     echo -e "\n\n-----8<----- FILE: $f -----8<-----\n" >> "$OUT"
     sed -n '1,4000p' "$f" >> "$OUT" || true
   done
-echo "✅ Wrote $OUT"
+echo "✅ Wrote $OUT (root)"
